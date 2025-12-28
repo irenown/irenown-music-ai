@@ -1,0 +1,48 @@
+API Keys
+Key
+Date created
+sk-W21BfqtLfCSVudT4GMgStULJ7KpXiUyruOHTVsfGfg5c63pA
+12/28/2025
+
+
+Documentation can be found at platform.stability.ai
+
+
+_______________________________________________________________________________________
+
+https://podcast.adobe.com/en/studio
+https://developer.adobe.com/console/3994671/servicesandapis
+
+_____________________________________________________________________________________
+
+Cloudflare R2 object storage
+
+API Tokens
+
+2fd1110ca58c9ff90fc7fbbb9ff07ac0
+
+https://2fd1110ca58c9ff90fc7fbbb9ff07ac0.r2.cloudflarestorage.com
+
+https://2fd1110ca58c9ff90fc7fbbb9ff07ac0.r2.cloudflarestorage.com/irenown
+
+f52cbe410c7cfa96e6d815caa9f71ccf51e65
+
+_____________________________________________________________________________________________
+
+
+Cloudinary API's
+
+Cloud name 
+di4onz3fo
+
+API key	
+441864163865968
+
+API secret
+N3qn71u7pMsUulpDMQsX3yl9PVQ
+
+API environment variable
+CLOUDINARY_URL=cloudinary://441864163865968:N3qn71u7pMsUulpDMQsX3yl9PVQ@di4onz3fo
+
+
+

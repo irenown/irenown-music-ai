@@ -1,0 +1,11 @@
+node_modules/
+.env
+*.sqlite
+*.db
+uploads/
+temp/
+logs/
+cloudflared/
+.DS_Store
+Thumbs.db
+cloudflared-config.yml
