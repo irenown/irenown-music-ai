@@ -262,7 +262,7 @@ app.post('/api/produce', async (c) => {
 });
 
 // Storage Proxy (to serve R2 files)
-app.get('/api/storage/:key', async (c) => {
+app.get('/api/storage/:key{.+}', async (c) => {
   const storage = new StorageService(c.env.BUCKET);
   const key = c.req.param('key');
 

@@ -2494,8 +2494,7 @@ var ElevenLabsService = class {
   async generateMusic(params, env) {
     const apiKey = env.PRODUCTION_AI_KEY_1;
     console.log(`Generating Music with ElevenLabs: ${params.prompt}`);
-    const response = await fetch("https://api.elevenlabs.io/v1/text-to-sound-effects", {
-      // Use correct music/sound endpoint
+    const response = await fetch("https://api.elevenlabs.io/v1/text-to-music", {
       method: "POST",
       headers: {
         "xi-api-key": apiKey,
@@ -2503,8 +2502,7 @@ var ElevenLabsService = class {
       },
       body: JSON.stringify({
         text: params.prompt,
-        duration_seconds: params.duration || 30,
-        prompt_influence: 0.7
+        duration_seconds: params.duration || 30
       })
     });
     if (!response.ok) {
@@ -2613,19 +2611,16 @@ var StabilityService = class {
     }
     const fullPrompt = `${prompt}, ${bpm} BPM, studio quality, professional instrumental, no vocals`;
     console.log(`Requesting music generation from Stability AI: "${fullPrompt}"`);
-    const response = await fetch("https://api.stability.ai/v2/generate/audio", {
+    const response = await fetch("https://api.stability.ai/v2beta/audio/stable-audio-2/text-to-audio", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
         "Accept": "audio/mpeg"
       },
-      body: JSON.stringify({
-        model: "stable-audio",
+      body: Buffer.from(JSON.stringify({
         prompt: fullPrompt,
-        seconds_total: Math.min(duration, 47),
-        steps: 100
-      })
+        seconds_total: Math.min(duration, 47)
+      }))
     });
     if (!response.ok) {
       const error = await response.text();
@@ -2994,7 +2989,7 @@ app.post("/api/produce", async (c) => {
     return c.json({ error: "Failed to start production: " + error.message }, 500);
   }
 });
-app.get("/api/storage/:key", async (c) => {
+app.get("/api/storage/:key{.+}", async (c) => {
   const storage = new storageService_default(c.env.BUCKET);
   const key = c.req.param("key");
   if (!key)

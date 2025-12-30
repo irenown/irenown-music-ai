@@ -15,19 +15,16 @@ class StabilityService {
         const fullPrompt = `${prompt}, ${bpm} BPM, studio quality, professional instrumental, no vocals`;
         console.log(`Requesting music generation from Stability AI: "${fullPrompt}"`);
 
-        const response = await fetch('https://api.stability.ai/v2/generate/audio', {
+        const response = await fetch('https://api.stability.ai/v2beta/audio/stable-audio-2/text-to-audio', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json',
                 'Accept': 'audio/mpeg'
             },
-            body: JSON.stringify({
-                model: 'stable-audio',
+            body: Buffer.from(JSON.stringify({
                 prompt: fullPrompt,
-                seconds_total: Math.min(duration, 47),
-                steps: 100
-            })
+                seconds_total: Math.min(duration, 47)
+            }))
         });
 
         if (!response.ok) {

@@ -16,7 +16,7 @@ export function ResultsView({ projectData, result, onNewProject }: ResultsViewPr
   const [activeTrack, setActiveTrack] = useState<"final" | "vocal" | "instrumental">("final")
   const [currentTime, setCurrentTime] = useState(0)
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || ""
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://irenown-backend.irenown-api.workers.dev"
 
   const togglePlay = () => {
     const audio = document.getElementById("main-player") as HTMLAudioElement

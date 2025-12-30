@@ -39,7 +39,7 @@ class ElevenLabsService {
         const apiKey = env.PRODUCTION_AI_KEY_1;
         console.log(`Generating Music with ElevenLabs: ${params.prompt}`);
 
-        const response = await fetch('https://api.elevenlabs.io/v1/text-to-sound-effects', { // Use correct music/sound endpoint
+        const response = await fetch('https://api.elevenlabs.io/v1/text-to-music', {
             method: 'POST',
             headers: {
                 'xi-api-key': apiKey,
@@ -47,8 +47,7 @@ class ElevenLabsService {
             },
             body: JSON.stringify({
                 text: params.prompt,
-                duration_seconds: params.duration || 30,
-                prompt_influence: 0.7
+                duration_seconds: params.duration || 30
             })
         });
 
