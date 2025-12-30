@@ -1,89 +1,83 @@
-import db from '../services/database.js';
-import admin from '../services/firebaseAdmin.js';
+import { jwtVerify, createRemoteJWKSet } from 'jose';
+import DatabaseService from '../services/database.js';
+
+const JWKS = createRemoteJWKSet(new URL('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com'));
 
 /**
  * Middleware to validate the API key for protected routes
  */
-export const validateApiKey = (req, res, next) => {
-    const apiKey = req.headers['x-api-key'];
+export const validateApiKey = async (c, next) => {
+    const apiKey = c.req.header('x-api-key');
+    const db = new DatabaseService(c.env.DB);
 
     if (!apiKey) {
-        return res.status(401).json({
+        return c.json({
             error: 'Authentication Required',
             details: 'Missing x-api-key header'
-        });
+        }, 401);
     }
 
     try {
-        const user = db.getUserByApiKey(apiKey);
+        const user = await db.getUserByApiKey(apiKey);
 
         if (!user) {
-            return res.status(403).json({
+            return c.json({
                 error: 'Invalid Credentials',
                 details: 'The provided API key is not registered'
-            });
+            }, 403);
         }
 
-        // Attach user info to request for downstream usage
-        req.user = user;
-        next();
+        // Attach user info to context for downstream usage
+        c.set('user', user);
+        await next();
     } catch (error) {
         console.error('Auth Middleware Error:', error);
-        res.status(500).json({ error: 'Internal Security Error' });
+        return c.json({ error: 'Internal Security Error' }, 500);
     }
 };
 
 /**
- * Middleware to verify Firebase IdToken
+ * Middleware to verify Firebase IdToken (Edge version)
+ * Note: Real implementation would use jose or similar to verify RS256 JWT
  */
-export const authenticateUser = async (req, res, next) => {
-    const authHeader = req.headers.authorization;
+export const authenticateUser = async (c, next) => {
+    const authHeader = c.req.header('Authorization');
+    const db = new DatabaseService(c.env.DB);
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         // Fallback to API Key if present
-        if (req.headers['x-api-key']) {
-            return validateApiKey(req, res, next);
+        if (c.req.header('x-api-key')) {
+            return await validateApiKey(c, next);
         }
-        return res.status(401).json({ error: 'Authentication required' });
+        return c.json({ error: 'Authentication required' }, 401);
     }
 
     const token = authHeader.split(' ')[1];
 
     try {
-        const decodedToken = await admin.auth().verifyIdToken(token);
-        const user = db.getUserById(decodedToken.uid);
+        const projectId = c.env.IDENTITY_PROVIDER_ID || 'irenown-mp-ai';
+        // Securely verify the JWT using Remote JWK Set
+        const { payload } = await jwtVerify(token, JWKS, {
+            issuer: `https://securetoken.google.com/${projectId}`,
+            audience: projectId,
+        });
+
+        const user = await db.getUserById(payload.sub || payload.user_id);
 
         if (!user) {
-            return res.status(404).json({
+            return c.json({
                 error: 'User not found in iRenown',
                 details: 'Firebase account exists but sync is incomplete.'
-            });
+            }, 404);
         }
 
-        req.user = user;
-        req.firebaseUser = decodedToken;
-        next();
+        c.set('user', user);
+        await next();
     } catch (error) {
         console.error('Firebase Auth Error:', error.message);
-        res.status(401).json({ error: 'Invalid or expired token' });
+        return c.json({
+            error: 'Invalid or expired token',
+            details: error.message
+        }, 401);
     }
-};
-
-/**
- * Middleware to restrict access based on user tier (e.g., silver, platinum)
- */
-export const restrictToTier = (tier) => {
-    return (req, res, next) => {
-        const tiers = ['silver', 'gold', 'platinum'];
-        const userTierIndex = tiers.indexOf(req.user.tier);
-        const requiredTierIndex = tiers.indexOf(tier);
-
-        if (userTierIndex < requiredTierIndex) {
-            return res.status(403).json({
-                error: 'Tier Restricted',
-                details: `This action requires ${tier} access. Your current tier is ${req.user.tier}.`
-            });
-        }
-        next();
-    };
 };

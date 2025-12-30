@@ -13,7 +13,13 @@ import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { apiClient } from "@/lib/api"
 import { auth } from "@/lib/firebase"
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth"
+import {
+  createUserWithEmailAndPassword,
+  updateProfile,
+  signInWithPopup,
+  GoogleAuthProvider
+} from "firebase/auth"
+import { useEffect } from "react"
 
 export default function SignUpPage() {
   const router = useRouter()
@@ -27,6 +33,10 @@ export default function SignUpPage() {
   })
   const [error, setError] = useState("")
 
+  useEffect(() => {
+    // Remove redirect result check since we're only using popup
+  }, []);
+
   const passwordStrength = () => {
     const { password } = formData
     let strength = 0
@@ -39,6 +49,75 @@ export default function SignUpPage() {
 
   const strengthLabels = ["Weak", "Fair", "Good", "Strong"]
   const strengthColors = ["bg-red-500", "bg-orange-500", "bg-yellow-500", "bg-green-500"]
+
+  const syncUser = async (user: any) => {
+    try {
+      const token = await user.getIdToken()
+      // Register with iRenown backend to create SQLite profile
+      const data = await apiClient.post('/api/auth/register', {
+        username: user.displayName || user.email?.split('@')[0] || "User",
+        email: user.email,
+        firebaseId: user.uid
+      });
+
+      apiClient.setToken(token);
+      apiClient.setApiKey(data.user.api_key);
+      apiClient.setUser(data.user);
+
+      router.push("/console")
+    } catch (err: any) {
+      console.error("Sync error:", err);
+      setError("Failed to synchronize user profile. Please try again.");
+      setIsLoading(false);
+    }
+  }
+
+  const handleGoogleLogin = async () => {
+    setError("")
+    setIsLoading(true)
+    console.log("=== GOOGLE SIGN-IN DEBUG ===");
+    console.log("Window origin:", window.location.origin);
+    console.log("Auth domain:", auth.app.options.authDomain);
+
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({
+        prompt: 'select_account'
+      });
+
+      console.log("Attempting signInWithPopup...");
+      const result = await signInWithPopup(auth, provider);
+      console.log("Sign-in successful!", result.user.email);
+
+      if (result) {
+        await syncUser(result.user);
+      }
+    } catch (err: any) {
+      console.error("=== GOOGLE SIGN-IN ERROR ===");
+      console.error("Error code:", err.code);
+      console.error("Error message:", err.message);
+      console.error("Full error:", err);
+
+      let errorMessage = "Failed to sign in with Google. ";
+
+      if (err.code === 'auth/popup-blocked') {
+        errorMessage += "Please allow popups for this site and try again.";
+      } else if (err.code === 'auth/popup-closed-by-user') {
+        errorMessage += "Sign-in was cancelled.";
+      } else if (err.code === 'auth/internal-error') {
+        errorMessage += "Internal error. This might be due to browser cookie settings. Please ensure third-party cookies are enabled, or try a different browser.";
+      } else if (err.code === 'auth/unauthorized-domain') {
+        errorMessage += "This domain is not authorized for authentication. Please contact support.";
+      } else if (err.code === 'auth/network-request-failed') {
+        errorMessage += "Network error. Please check your internet connection.";
+      } else {
+        errorMessage += err.message || "Please try again or use email/password sign-up.";
+      }
+
+      setError(errorMessage);
+      setIsLoading(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -146,7 +225,10 @@ export default function SignUpPage() {
           <div className="space-y-3 mb-6">
             <Button
               variant="outline"
-              className="w-full justify-center gap-3 h-12 border-border hover:bg-card hover:border-primary/50 bg-transparent"
+              onClick={handleGoogleLogin}
+              type="button"
+              disabled={isLoading}
+              className="w-full justify-center gap-3 h-12 border-border hover:bg-card hover:border-primary/50 bg-transparent disabled:opacity-50"
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24">
                 <path
@@ -167,15 +249,6 @@ export default function SignUpPage() {
                 />
               </svg>
               Continue with Google
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full justify-center gap-3 h-12 border-border hover:bg-card hover:border-primary/50 bg-transparent"
-            >
-              <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0012 2z" />
-              </svg>
-              Continue with GitHub
             </Button>
           </div>
 
@@ -298,7 +371,13 @@ export default function SignUpPage() {
             <Button
               type="submit"
               className="w-full h-12 bg-primary text-primary-foreground hover:bg-primary/90 glow-irenown transition-all"
-              disabled={isLoading || !formData.agreeToTerms}
+              disabled={isLoading}
+              onClick={(e) => {
+                if (!formData.agreeToTerms) {
+                  e.preventDefault();
+                  setError("Please agree to the Terms of Service and Privacy Policy to continue.");
+                }
+              }}
             >
               {isLoading ? (
                 <>

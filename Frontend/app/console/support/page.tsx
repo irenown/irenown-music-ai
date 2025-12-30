@@ -66,7 +66,7 @@ const faqs = [
   {
     question: "What's the difference between Standard and Premium quality?",
     answer:
-      "Standard quality uses our base AI models and is included in your subscription. Premium quality uses ElevenLabs technology with professional LANDR mastering, includes stem files (vocal + instrumental), and provides multiple format downloads (WAV, FLAC, MP3).",
+      "Standard quality uses our base AI models and is included in your subscription. Premium quality uses iRenown HD generation with professional Master-Pro suite, includes stem files (vocal + instrumental), and provides multiple format downloads (WAV, FLAC, MP3).",
   },
   {
     question: "How do I get a refund?",

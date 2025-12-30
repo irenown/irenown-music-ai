@@ -1,53 +1,39 @@
-import axios from 'axios';
-import fs from 'fs';
-import path from 'path';
-
 /**
  * Service to interact with Stability AI (Stable Audio)
+ * (Edge compatible)
  */
 class StabilityService {
-    constructor() {
-        this.apiKey = process.env.STABILITY_API_KEY;
-        this.apiHost = 'https://api.stability.ai';
-    }
-
     /**
      * Generates music based on a prompt
-     * Stability Audio API Documentation: https://platform.stability.ai/docs/api-reference#tag/Audio
      */
-    async generateMusic({ prompt, bpm, duration = 30 }) {
-        if (!this.apiKey) {
-            throw new Error('STABILITY_API_KEY is not configured');
+    async generateMusic({ prompt, bpm, duration = 30 }, env) {
+        const apiKey = env.PRODUCTION_AI_KEY_2;
+        if (!apiKey) {
+            throw new Error('PRODUCTION_AI_KEY_2 is not configured');
         }
 
-        try {
-            const fullPrompt = `${prompt}, ${bpm} BPM, studio quality, professional instrumental, no vocals`;
-            console.log(`Requesting music generation from Stability AI: "${fullPrompt}"`);
+        const fullPrompt = `${prompt}, ${bpm} BPM, studio quality, professional instrumental, no vocals`;
+        console.log(`Requesting music generation from Stability AI: "${fullPrompt}"`);
 
-            const response = await axios.post(
-                `${this.apiHost}/v2beta/stable-audio/text-to-audio`,
-                {
-                    prompt: fullPrompt,
-                    output_format: "wav",
-                    seconds_total: Math.min(duration, 45) // Free tier limit is often 45s
-                },
-                {
-                    headers: {
-                        'Authorization': `Bearer ${this.apiKey}`,
-                        'Accept': 'audio/wav'
-                    },
-                    responseType: 'arraybuffer'
-                }
-            );
+        const formData = new FormData();
+        formData.append('prompt', fullPrompt);
+        formData.append('seconds_total', Math.min(duration, 45).toString());
 
-            return Buffer.from(response.data);
-        } catch (error) {
-            const errorMessage = error.response?.data ?
-                Buffer.from(error.response.data).toString() :
-                error.message;
-            console.error('Stability AI API Error:', errorMessage);
-            throw new Error(`Stability AI generation failed: ${errorMessage}`);
+        const response = await fetch('https://api.stability.ai/v2beta/stable-audio/generate', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Accept': 'audio/wav',
+            },
+            body: formData
+        });
+
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(`Stability AI generation failed: ${error}`);
         }
+
+        return await response.arrayBuffer();
     }
 }
 

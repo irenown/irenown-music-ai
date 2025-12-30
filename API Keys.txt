@@ -44,5 +44,17 @@ N3qn71u7pMsUulpDMQsX3yl9PVQ
 API environment variable
 CLOUDINARY_URL=cloudinary://441864163865968:N3qn71u7pMsUulpDMQsX3yl9PVQ@di4onz3fo
 
+___________________________________________________________________________________________________
 
 
+
+ Auphonic API
+
+RnDDzXPKpaeKPHvMmIyuPewsgGNP8kg1
+
+_______________________________________________________________________________________________________
+
+
+ElevenLabs Api
+
+sk_8cfc91468d29027cbb840b7a9c2767dbb216054f67eebb7b

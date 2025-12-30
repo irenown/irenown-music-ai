@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
+import { apiClient } from "@/lib/api"
 import {
   Music,
   Search,
@@ -21,6 +22,7 @@ import {
   Clock,
   Calendar,
   Volume2,
+  Loader2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -38,100 +40,20 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Slider } from "@/components/ui/slider"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
+import { formatDistanceToNow } from "date-fns"
 
-// Mock data
-const songs = [
-  {
-    id: 1,
-    title: "Summer Vibes",
-    genre: "Pop",
-    duration: "3:24",
-    quality: "standard",
-    createdAt: "2024-12-26",
-    relativeTime: "2 days ago",
-    isFavorite: false,
-    playCount: 12,
-    thumbnail: "from-amber-500/30 to-orange-500/30",
-    detectedKey: "C Major",
-    detectedTempo: 120,
-    moodTags: ["upbeat", "energetic"],
-  },
-  {
-    id: 2,
-    title: "Night Drive",
-    genre: "R&B",
-    duration: "4:12",
-    quality: "premium",
-    createdAt: "2024-12-20",
-    relativeTime: "1 week ago",
-    isFavorite: true,
-    playCount: 28,
-    thumbnail: "from-purple-500/30 to-pink-500/30",
-    detectedKey: "G Minor",
-    detectedTempo: 85,
-    moodTags: ["chill", "romantic"],
-  },
-  {
-    id: 3,
-    title: "Midnight Dreams",
-    genre: "Jazz",
-    duration: "2:45",
-    quality: "standard",
-    createdAt: "2024-12-15",
-    relativeTime: "2 weeks ago",
-    isFavorite: false,
-    playCount: 8,
-    thumbnail: "from-indigo-500/30 to-blue-500/30",
-    detectedKey: "Bb Major",
-    detectedTempo: 110,
-    moodTags: ["dreamy", "smooth"],
-  },
-  {
-    id: 4,
-    title: "Ocean Waves",
-    genre: "EDM",
-    duration: "3:56",
-    quality: "premium",
-    createdAt: "2024-12-10",
-    relativeTime: "3 weeks ago",
-    isFavorite: true,
-    playCount: 45,
-    thumbnail: "from-cyan-500/30 to-teal-500/30",
-    detectedKey: "A Minor",
-    detectedTempo: 128,
-    moodTags: ["energetic", "uplifting"],
-  },
-  {
-    id: 5,
-    title: "Urban Flow",
-    genre: "Hip-Hop",
-    duration: "3:08",
-    quality: "standard",
-    createdAt: "2024-12-05",
-    relativeTime: "3 weeks ago",
-    isFavorite: false,
-    playCount: 19,
-    thumbnail: "from-red-500/30 to-orange-500/30",
-    detectedKey: "D Minor",
-    detectedTempo: 95,
-    moodTags: ["urban", "confident"],
-  },
-  {
-    id: 6,
-    title: "Country Roads",
-    genre: "Country",
-    duration: "4:32",
-    quality: "premium",
-    createdAt: "2024-12-01",
-    relativeTime: "4 weeks ago",
-    isFavorite: false,
-    playCount: 15,
-    thumbnail: "from-yellow-500/30 to-amber-500/30",
-    detectedKey: "G Major",
-    detectedTempo: 105,
-    moodTags: ["nostalgic", "warm"],
-  },
-]
+interface Project {
+  id: string
+  name: string
+  genre: string
+  bpm: number | null
+  status: string
+  quality: string
+  created_at: string
+  vocal_url?: string
+  mix_url?: string
+  instrumental_url?: string
+}
 
 const genres = ["All", "Pop", "Rock", "Hip-Hop", "EDM", "R&B", "Jazz", "Country", "Latin"]
 const qualities = ["All", "Standard", "Premium"]
@@ -140,29 +62,76 @@ const sortOptions = [
   { value: "oldest", label: "Oldest First" },
   { value: "title-asc", label: "Title (A-Z)" },
   { value: "title-desc", label: "Title (Z-A)" },
-  { value: "duration-short", label: "Duration (Shortest)" },
-  { value: "duration-long", label: "Duration (Longest)" },
 ]
 
 export default function ProjectsPage() {
+  const [projects, setProjects] = useState<Project[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedGenre, setSelectedGenre] = useState("All")
   const [selectedQuality, setSelectedQuality] = useState("All")
   const [sortBy, setSortBy] = useState("recent")
-  const [playingSong, setPlayingSong] = useState<number | null>(null)
-  const [selectedSong, setSelectedSong] = useState<(typeof songs)[0] | null>(null)
-  const [favorites, setFavorites] = useState<number[]>(songs.filter((s) => s.isFavorite).map((s) => s.id))
+  const [playingSong, setPlayingSong] = useState<string | null>(null)
+  const [selectedSong, setSelectedSong] = useState<Project | null>(null)
+  const [favorites, setFavorites] = useState<string[]>([])
 
-  const filteredSongs = songs.filter((song) => {
-    const matchesSearch = song.title.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesGenre = selectedGenre === "All" || song.genre === selectedGenre
-    const matchesQuality = selectedQuality === "All" || song.quality.toLowerCase() === selectedQuality.toLowerCase()
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const data = await apiClient.get("/api/projects")
+        if (Array.isArray(data)) {
+          setProjects(data)
+        }
+      } catch (error) {
+        console.error("Failed to fetch projects:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchProjects()
+  }, [])
+
+  const filteredSongs = projects.filter((project) => {
+    const matchesSearch = project.name.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesGenre = selectedGenre === "All" || (project.genre && project.genre.toLowerCase() === selectedGenre.toLowerCase())
+    const matchesQuality = selectedQuality === "All" || (project.quality && project.quality.toLowerCase() === selectedQuality.toLowerCase())
     return matchesSearch && matchesGenre && matchesQuality
+  }).sort((a, b) => {
+    if (sortBy === 'recent') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    if (sortBy === 'oldest') return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    if (sortBy === 'title-asc') return a.name.localeCompare(b.name)
+    if (sortBy === 'title-desc') return b.name.localeCompare(a.name)
+    return 0
   })
 
-  const toggleFavorite = (id: number) => {
+  const toggleFavorite = (id: string) => {
     setFavorites((prev) => (prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]))
+  }
+
+  // Helper to get formatted relative time
+  const getRelativeTime = (dateString: string) => {
+    try {
+      return formatDistanceToNow(new Date(dateString), { addSuffix: true })
+    } catch (e) {
+      return "Recently"
+    }
+  }
+
+  // Helper to generate a consistent gradient based on ID
+  const getThumbnailGradient = (id: string) => {
+    const colors = [
+      "from-amber-500/30 to-orange-500/30",
+      "from-purple-500/30 to-pink-500/30",
+      "from-indigo-500/30 to-blue-500/30",
+      "from-cyan-500/30 to-teal-500/30",
+      "from-red-500/30 to-orange-500/30",
+      "from-yellow-500/30 to-amber-500/30",
+      "from-emerald-500/30 to-green-500/30",
+      "from-violet-500/30 to-purple-500/30"
+    ]
+    const index = id.charCodeAt(0) % colors.length
+    return colors[index]
   }
 
   return (
@@ -172,14 +141,14 @@ export default function ProjectsPage() {
         <div>
           <h1 className="text-2xl lg:text-3xl font-bold">My Projects</h1>
           <p className="text-muted-foreground mt-1">
-            Showing {filteredSongs.length} of {songs.length} songs
+            {isLoading ? "Loading..." : `Showing ${filteredSongs.length} of ${projects.length} songs`}
           </p>
         </div>
         <Button
           asChild
           className="bg-gradient-to-r from-irenown-dark to-irenown-mid hover:from-irenown-mid hover:to-irenown-light text-primary-foreground"
         >
-          <Link href="/console/create">
+          <Link href="/studio">
             <Music className="w-4 h-4 mr-2" />
             Create New Song
           </Link>
@@ -276,183 +245,96 @@ export default function ProjectsPage() {
         </CardContent>
       </Card>
 
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex justify-center py-20">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      )}
+
       {/* Songs Grid/List */}
-      {viewMode === "grid" ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredSongs.map((song) => (
-            <Card
-              key={song.id}
-              className="bg-card/50 backdrop-blur-sm border-border/50 hover:border-primary/30 transition-all group cursor-pointer overflow-hidden"
-              onClick={() => setSelectedSong(song)}
-            >
-              {/* Thumbnail */}
-              <div
-                className={cn(
-                  "relative aspect-square bg-gradient-to-br flex items-center justify-center",
-                  song.thumbnail,
-                )}
+      {!isLoading && filteredSongs.length > 0 && (
+        viewMode === "grid" ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {filteredSongs.map((project) => (
+              <Card
+                key={project.id}
+                className="bg-card/50 backdrop-blur-sm border-border/50 hover:border-primary/30 transition-all group cursor-pointer overflow-hidden"
+                onClick={() => setSelectedSong(project)}
               >
-                <Music className="w-16 h-16 text-foreground/30" />
-
-                {/* Play Overlay */}
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setPlayingSong(playingSong === song.id ? null : song.id)
-                    }}
-                    className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-colors"
-                  >
-                    {playingSong === song.id ? (
-                      <Pause className="w-7 h-7 text-white" />
-                    ) : (
-                      <Play className="w-7 h-7 text-white ml-1" />
-                    )}
-                  </button>
-                </div>
-
-                {/* Quality Badge */}
-                {song.quality === "premium" && (
-                  <Badge className="absolute top-3 right-3 bg-irenown-mid/80 text-primary-foreground border-none">
-                    <Star className="w-3 h-3 mr-1" />
-                    Premium
-                  </Badge>
-                )}
-
-                {/* Favorite Button */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    toggleFavorite(song.id)
-                  }}
+                {/* Thumbnail */}
+                <div
                   className={cn(
-                    "absolute top-3 left-3 w-8 h-8 rounded-full flex items-center justify-center transition-all",
-                    favorites.includes(song.id)
-                      ? "bg-red-500 text-white"
-                      : "bg-black/30 text-white opacity-0 group-hover:opacity-100",
+                    "relative aspect-square bg-gradient-to-br flex items-center justify-center",
+                    getThumbnailGradient(project.id),
                   )}
                 >
-                  <Heart className={cn("w-4 h-4", favorites.includes(song.id) && "fill-current")} />
-                </button>
-              </div>
+                  <Music className="w-16 h-16 text-foreground/30" />
 
-              <CardContent className="p-4">
-                <h3 className="font-semibold truncate mb-1">{song.title}</h3>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span>{song.genre}</span>
-                  <span>•</span>
-                  <span>{song.duration}</span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">{song.relativeTime}</p>
-
-                {/* Quick Actions */}
-                <div className="flex items-center gap-1 mt-3 pt-3 border-t border-border">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setPlayingSong(playingSong === song.id ? null : song.id)
-                    }}
-                  >
-                    {playingSong === song.id ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
-                    <Download className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      toggleFavorite(song.id)
-                    }}
-                  >
-                    <Heart className={cn("w-4 h-4", favorites.includes(song.id) && "fill-current text-red-500")} />
-                  </Button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 ml-auto">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem>
-                        <Share2 className="w-4 h-4 mr-2" />
-                        Share
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <RefreshCw className="w-4 h-4 mr-2" />
-                        Regenerate
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-destructive">
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-          <CardContent className="p-0">
-            <div className="divide-y divide-border">
-              {filteredSongs.map((song) => (
-                <div
-                  key={song.id}
-                  className="flex items-center gap-4 p-4 hover:bg-muted/30 transition-colors cursor-pointer group"
-                  onClick={() => setSelectedSong(song)}
-                >
-                  {/* Thumbnail */}
-                  <div
-                    className={cn(
-                      "relative w-14 h-14 rounded-lg bg-gradient-to-br flex items-center justify-center shrink-0",
-                      song.thumbnail,
-                    )}
-                  >
-                    <Music className="w-6 h-6 text-foreground/40" />
+                  {/* Play Overlay */}
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
-                        setPlayingSong(playingSong === song.id ? null : song.id)
+                        setPlayingSong(playingSong === project.id ? null : project.id)
                       }}
-                      className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg"
+                      className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-colors"
                     >
-                      {playingSong === song.id ? (
-                        <Pause className="w-5 h-5 text-white" />
+                      {playingSong === project.id ? (
+                        <Pause className="w-7 h-7 text-white" />
                       ) : (
-                        <Play className="w-5 h-5 text-white" />
+                        <Play className="w-7 h-7 text-white ml-1" />
                       )}
                     </button>
                   </div>
 
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-medium truncate">{song.title}</h3>
-                      {song.quality === "premium" && <Star className="w-4 h-4 text-irenown-light shrink-0" />}
-                    </div>
-                    <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
-                      <span>{song.genre}</span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {song.duration}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        {song.relativeTime}
-                      </span>
-                    </div>
-                  </div>
+                  {/* Quality Badge */}
+                  {project.quality === "premium" && (
+                    <Badge className="absolute top-3 right-3 bg-irenown-mid/80 text-primary-foreground border-none">
+                      <Star className="w-3 h-3 mr-1" />
+                      Premium
+                    </Badge>
+                  )}
 
-                  {/* Actions */}
-                  <div className="flex items-center gap-1">
+                  {/* Favorite Button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      toggleFavorite(project.id)
+                    }}
+                    className={cn(
+                      "absolute top-3 left-3 w-8 h-8 rounded-full flex items-center justify-center transition-all",
+                      favorites.includes(project.id)
+                        ? "bg-red-500 text-white"
+                        : "bg-black/30 text-white opacity-0 group-hover:opacity-100",
+                    )}
+                  >
+                    <Heart className={cn("w-4 h-4", favorites.includes(project.id) && "fill-current")} />
+                  </button>
+                </div>
+
+                <CardContent className="p-4">
+                  <h3 className="font-semibold truncate mb-1">{project.name}</h3>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span>{project.genre || "Unknown"}</span>
+                    <span>•</span>
+                    <span>{project.bpm ? `${project.bpm} BPM` : "-"}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">{getRelativeTime(project.created_at)}</p>
+
+                  {/* Quick Actions */}
+                  <div className="flex items-center gap-1 mt-3 pt-3 border-t border-border">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setPlayingSong(playingSong === project.id ? null : project.id)
+                      }}
+                    >
+                      {playingSong === project.id ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                    </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
                       <Download className="w-4 h-4" />
                     </Button>
@@ -462,14 +344,14 @@ export default function ProjectsPage() {
                       className="h-8 w-8"
                       onClick={(e) => {
                         e.stopPropagation()
-                        toggleFavorite(song.id)
+                        toggleFavorite(project.id)
                       }}
                     >
-                      <Heart className={cn("w-4 h-4", favorites.includes(song.id) && "fill-current text-red-500")} />
+                      <Heart className={cn("w-4 h-4", favorites.includes(project.id) && "fill-current text-red-500")} />
                     </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 ml-auto">
                           <MoreHorizontal className="w-4 h-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -490,15 +372,111 @@ export default function ProjectsPage() {
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+            <CardContent className="p-0">
+              <div className="divide-y divide-border">
+                {filteredSongs.map((project) => (
+                  <div
+                    key={project.id}
+                    className="flex items-center gap-4 p-4 hover:bg-muted/30 transition-colors cursor-pointer group"
+                    onClick={() => setSelectedSong(project)}
+                  >
+                    {/* Thumbnail */}
+                    <div
+                      className={cn(
+                        "relative w-14 h-14 rounded-lg bg-gradient-to-br flex items-center justify-center shrink-0",
+                        getThumbnailGradient(project.id),
+                      )}
+                    >
+                      <Music className="w-6 h-6 text-foreground/40" />
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setPlayingSong(playingSong === project.id ? null : project.id)
+                        }}
+                        className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg"
+                      >
+                        {playingSong === project.id ? (
+                          <Pause className="w-5 h-5 text-white" />
+                        ) : (
+                          <Play className="w-5 h-5 text-white" />
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-medium truncate">{project.name}</h3>
+                        {project.quality === "premium" && <Star className="w-4 h-4 text-irenown-light shrink-0" />}
+                      </div>
+                      <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
+                        <span>{project.genre || "Unknown"}</span>
+                        <span className="flex items-center gap-1">
+                          <Volume2 className="w-3 h-3" />
+                          {project.bpm ? `${project.bpm} BPM` : "-"}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {getRelativeTime(project.created_at)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                        <Download className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          toggleFavorite(project.id)
+                        }}
+                      >
+                        <Heart className={cn("w-4 h-4", favorites.includes(project.id) && "fill-current text-red-500")} />
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem>
+                            <Share2 className="w-4 h-4 mr-2" />
+                            Share
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <RefreshCw className="w-4 h-4 mr-2" />
+                            Regenerate
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="text-destructive">
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )
       )}
 
       {/* Empty State */}
-      {filteredSongs.length === 0 && (
+      {!isLoading && filteredSongs.length === 0 && (
         <div className="text-center py-16">
           <Music className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
           <h3 className="text-lg font-semibold mb-2">No songs found</h3>
@@ -509,7 +487,7 @@ export default function ProjectsPage() {
           </p>
           {!searchQuery && selectedGenre === "All" && selectedQuality === "All" && (
             <Button asChild>
-              <Link href="/console/create">Create Your First Song</Link>
+              <Link href="/studio">Create Your First Song</Link>
             </Button>
           )}
         </div>
@@ -521,7 +499,7 @@ export default function ProjectsPage() {
           {selectedSong && (
             <>
               <DialogHeader>
-                <DialogTitle className="text-xl">{selectedSong.title}</DialogTitle>
+                <DialogTitle className="text-xl">{selectedSong.name}</DialogTitle>
               </DialogHeader>
 
               <div className="grid md:grid-cols-2 gap-6 mt-4">
@@ -530,7 +508,7 @@ export default function ProjectsPage() {
                   <div
                     className={cn(
                       "aspect-square rounded-xl bg-gradient-to-br flex items-center justify-center relative overflow-hidden",
-                      selectedSong.thumbnail,
+                      getThumbnailGradient(selectedSong.id),
                     )}
                   >
                     <Music className="w-20 h-20 text-foreground/30" />
@@ -551,7 +529,7 @@ export default function ProjectsPage() {
                     <Slider defaultValue={[0]} max={100} step={1} />
                     <div className="flex justify-between text-xs text-muted-foreground">
                       <span>0:00</span>
-                      <span>{selectedSong.duration}</span>
+                      <span>--:--</span>
                     </div>
                   </div>
 
@@ -567,19 +545,19 @@ export default function ProjectsPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="p-3 rounded-lg bg-muted/50">
                       <p className="text-xs text-muted-foreground">Genre</p>
-                      <p className="font-medium">{selectedSong.genre}</p>
+                      <p className="font-medium">{selectedSong.genre || "Unknown"}</p>
                     </div>
                     <div className="p-3 rounded-lg bg-muted/50">
                       <p className="text-xs text-muted-foreground">Duration</p>
-                      <p className="font-medium">{selectedSong.duration}</p>
+                      <p className="font-medium">--:--</p>
                     </div>
                     <div className="p-3 rounded-lg bg-muted/50">
-                      <p className="text-xs text-muted-foreground">Key</p>
-                      <p className="font-medium">{selectedSong.detectedKey}</p>
+                      <p className="text-xs text-muted-foreground">Status</p>
+                      <p className="font-medium capitalize">{selectedSong.status}</p>
                     </div>
                     <div className="p-3 rounded-lg bg-muted/50">
                       <p className="text-xs text-muted-foreground">Tempo</p>
-                      <p className="font-medium">{selectedSong.detectedTempo} BPM</p>
+                      <p className="font-medium">{selectedSong.bpm ? `${selectedSong.bpm} BPM` : "-"}</p>
                     </div>
                   </div>
 
@@ -598,19 +576,8 @@ export default function ProjectsPage() {
                   </div>
 
                   <div className="p-3 rounded-lg bg-muted/50">
-                    <p className="text-xs text-muted-foreground mb-2">Mood Tags</p>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedSong.moodTags.map((tag) => (
-                        <Badge key={tag} variant="outline">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="p-3 rounded-lg bg-muted/50">
                     <p className="text-xs text-muted-foreground mb-2">Created</p>
-                    <p className="font-medium">{selectedSong.relativeTime}</p>
+                    <p className="font-medium">{getRelativeTime(selectedSong.created_at)}</p>
                   </div>
                 </div>
               </div>

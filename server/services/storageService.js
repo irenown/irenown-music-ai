@@ -1,84 +1,53 @@
-import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import fs from 'fs';
-
 /**
- * Service to handle cloud storage (S3/R2)
+ * Service to handle Cloudflare R2 Storage operations
  */
 class StorageService {
-    constructor() {
-        this.s3Client = null;
-        this.bucketName = process.env.STORAGE_BUCKET;
-
-        if (process.env.STORAGE_ACCESS_KEY) {
-            this.s3Client = new S3Client({
-                region: process.env.STORAGE_REGION || 'auto',
-                endpoint: process.env.STORAGE_ENDPOINT,
-                credentials: {
-                    accessKeyId: process.env.STORAGE_ACCESS_KEY,
-                    secretAccessKey: process.env.STORAGE_SECRET_KEY,
-                },
-                // R2 requires some specific settings for S3 compatibility
-                forcePathStyle: true,
-            });
-        }
+    constructor(bucket) {
+        this.bucket = bucket;
     }
 
     /**
-     * Uploads a file to cloud storage
+     * Uploads a file (as ArrayBuffer or ReadableStream) to R2
      */
-    async uploadFile(filePath, key, contentType) {
-        if (!this.s3Client) {
-            console.warn(`[Storage] Cloud storage not configured. Mocking upload for ${key}`);
-            return `local://${key}`;
+    async uploadFile(data, key, contentType) {
+        if (!this.bucket) {
+            console.warn(`[Storage] R2 Bucket not configured. Mocking upload for ${key}`);
+            return key;
         }
 
-        const fileStream = fs.createReadStream(filePath);
-        const command = new PutObjectCommand({
-            Bucket: this.bucketName,
-            Key: key,
-            Body: fileStream,
-            ContentType: contentType
+        await this.bucket.put(key, data, {
+            httpMetadata: { contentType: contentType }
         });
 
-        await this.s3Client.send(command);
         return key;
     }
 
     /**
-     * Generates a signed URL for a file
+     * Generates a signed URL for a file (Using a custom Worker endpoint or R2 public URL)
+     * For now, we'll return the key or a projected URL if public access is enabled.
+     * In a real Worker, you'd usually serve these via another route or a public bucket domain.
      */
-    async getSignedUrl(key, expiresLimit = 3600) {
-        if (!this.s3Client) {
-            // Local fallback URL
-            return `/${key.startsWith('output/') ? 'output' : 'uploads'}/${key.split('/').pop()}`;
-        }
-
-        const command = new GetObjectCommand({
-            Bucket: this.bucketName,
-            Key: key,
-        });
-
-        return await getSignedUrl(this.s3Client, command, { expiresIn: expiresLimit });
+    async getSignedUrl(key) {
+        // Implementation depends on whether the bucket is public or requires a proxy worker
+        // For iRenown, we'll assume a proxy route /api/storage/:key or a public domain
+        return `/api/storage/${key}`;
     }
 
     /**
-     * Generates a signed PUT URL for external services (e.g. Dolby) to upload results
+     * Fetches a file from R2
      */
-    async getSignedUploadUrl(key, expiresLimit = 3600) {
-        if (!this.s3Client) {
-            // Local fallback not supported for external API writes without a tunnel
-            throw new Error('Cloud Storage required for External API output');
-        }
+    async getFile(key) {
+        const object = await this.bucket.get(key);
+        if (!object) return null;
+        return object;
+    }
 
-        const command = new PutObjectCommand({
-            Bucket: this.bucketName,
-            Key: key,
-            ContentType: 'audio/wav' // content type can be inferred or fixed
-        });
-
-        return await getSignedUrl(this.s3Client, command, { expiresIn: expiresLimit });
+    /**
+     * Deletes a file from R2
+     */
+    async deleteFile(key) {
+        await this.bucket.delete(key);
     }
 }
 
-export default new StorageService();
+export default StorageService;

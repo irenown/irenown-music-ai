@@ -13,7 +13,7 @@ const pressReleases = [
   },
   {
     date: "Nov 28, 2024",
-    title: "iRenown Launches Premium Quality Tier with ElevenLabs Partnership",
+    title: "iRenown Launches Premium Quality Tier for Professional Creators",
     excerpt: "New premium tier delivers studio-grade music generation for professional releases.",
   },
   {

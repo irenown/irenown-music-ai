@@ -1,46 +1,53 @@
-# iRenown AI - Backend API Suite
+# iRenown AI - Edge API Suite (Cloudflare Workers)
 
-This repository contains the core AI audio production services for the iRenown platform. The project is focused on high-performance vocal processing, music generation, and master mixing using industry-standard tools (FFmpeg, ElevenLabs, Stability AI).
+This repository contains the core AI audio production services for the iRenown platform, now optimized for the Cloudflare edge. The project leverages Cloudflare Workers, D1 Database, R2 Storage, and Queues for a 100% cloud-hosted, high-performance backend.
 
-## 🚀 Getting Started
+## 🚀 Cloudflare Deployment
 
-### Prerequisites
-- Node.js (v18 or higher)
-- FFmpeg installed on your system PATH
-- Redis (Required for Job Queue)
-- API keys for ElevenLabs, Stability AI, and Stripe
+### 1. Prerequisites
+- [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/install-and-update/) installed.
+- Cloudflare account with Workers Paid (required for Queues).
+- API keys for integrated AI production services.
 
-### Installation
-1. Navigate to the `server` directory:
+### 2. Setup & Deployment
+1. **Initialize Database (D1)**:
    ```bash
-   cd server
+   wrangler d1 create irenown-db
+   # Update wrangler.toml with the generated database_id
    ```
-2. Install dependencies:
+2. **Apply Schema**:
    ```bash
-   npm install
+   wrangler d1 execute irenown-db --file=./schema.sql 
    ```
-3. Configure your environment variables in `.env`.
+3. **Configure Secrets**:
+   ```bash
+   wrangler secret put PRODUCTION_AI_KEY_1
+   wrangler secret put PRODUCTION_AI_KEY_2
+   wrangler secret put ASSET_MANAGER_ID
+   wrangler secret put ASSET_MANAGER_KEY
+   wrangler secret put ASSET_MANAGER_SECRET
+   wrangler secret put IDENTITY_PROVIDER_ID
+   ```
+4. **Deploy**:
+   ```bash
+   wrangler deploy
+   ```
 
 ## 🛰️ API Catalog
 
 ### Production Pipeline
-- `POST /api/produce`: Queues a production job. Returns `jobId`.
-- `GET /api/jobs/:id`: Check status/progress of a production job.
+- `POST /api/produce`: Queues a production job. (Requires `x-api-key`)
+- `GET /api/jobs/:id`: Check status of a job.
 
-### Project Vault
-- `GET /api/projects`: Fetch completed project history.
-- `DELETE /api/projects/:id`: Remove a project from the vault.
+### User Identity
+- `POST /api/auth/register`: Synchronize user identity with iRenown.
 
-### Payments & Credits
-- `POST /api/payments/subscribe`: Create a Stripe checkout session for monthly tiers.
-- `POST /api/payments/credits`: Purchase individual premium song credits.
-
-## 🏛️ Architecture (The iRenown Pipeline)
-1. **Studio Enhancement**: Advanced vocal cleaning and dynamics processing.
-2. **Melodic Analysis**: Automatic Key/BPM detection for musical alignment.
-3. **Dual-Tier Generation**: Stability AI (Silver) vs ElevenLabs Music (Gold/Platinum).
-4. **Master Mixing**: Professional 320kbps MP3 final masters via FFmpeg `loudnorm`.
-5. **Cloud Vault**: Automatic upload to S3/R2 with secure signed URL access.
+## 🏛️ Edge Architecture
+1. **Routing**: Powered by high-performance edge routing.
+2. **Storage**: Edge-native cloud storage for all audio assets (uploads/output).
+3. **Database**: Edge-native relational database for user profiles and project history.
+4. **Processing**: Reliable background orchestration for production jobs.
+5. **Services**: Direct integrations with proprietary AI generation and processing cores.
 
 ---
-*Enterprise Backend Alignment completed on Dec 2025.*
+*Edge Migration completed on Dec 2025.*

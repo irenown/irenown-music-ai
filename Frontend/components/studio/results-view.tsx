@@ -16,7 +16,7 @@ export function ResultsView({ projectData, result, onNewProject }: ResultsViewPr
   const [activeTrack, setActiveTrack] = useState<"final" | "vocal" | "instrumental">("final")
   const [currentTime, setCurrentTime] = useState(0)
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || ""
 
   const togglePlay = () => {
     const audio = document.getElementById("main-player") as HTMLAudioElement
@@ -30,12 +30,15 @@ export function ResultsView({ projectData, result, onNewProject }: ResultsViewPr
 
   const getAudioUrl = (type: string) => {
     if (!result) return ""
+    let path = ""
     switch (type) {
-      case "final": return `${apiUrl}${result.mix_url}`
-      case "vocal": return `${apiUrl}${result.vocal_url}`
-      case "instrumental": return `${apiUrl}${result.instrumental_url}`
+      case "final": path = result.mix_url; break;
+      case "vocal": path = result.vocal_url; break;
+      case "instrumental": path = result.instrumental_url; break;
       default: return ""
     }
+    if (path.startsWith('http')) return path;
+    return `${apiUrl}${path}`;
   }
 
   const formatTime = (seconds: number) => {

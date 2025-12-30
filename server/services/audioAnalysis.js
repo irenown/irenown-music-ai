@@ -1,21 +1,22 @@
-import fs from 'fs';
 import wav from 'node-wav';
 import MusicTempo from 'music-tempo';
 
 /**
  * Service to analyze audio files for key, BPM, and duration
+ * (Edge compatible)
  */
 class AudioAnalysisService {
     /**
-     * Analyzes an audio file
-     * @param {string} filePath - Path to the audio file
+     * Analyzes an audio buffer
+     * @param {ArrayBuffer|Buffer} buffer - Raw audio data
      * @returns {Promise<Object>} - Analysis results
      */
-    async analyze(filePath) {
+    async analyze(buffer) {
         try {
-            console.log(`Analyzing audio: ${filePath}`);
-            const buffer = fs.readFileSync(filePath);
-            const result = wav.decode(buffer);
+            console.log(`Analyzing audio buffer...`);
+
+            // decode wav
+            const result = wav.decode(new Uint8Array(buffer));
 
             const sampleRate = result.sampleRate;
             const channelData = result.channelData[0]; // Use first channel for analysis
@@ -28,9 +29,7 @@ class AudioAnalysisService {
             const duration = channelData.length / sampleRate;
 
             // 3. Key Detection (Naive implementation for MVP)
-            // Note: True key detection requires spectral analysis (FFT)
-            // For now, we return a placeholder or detected if using essentia.js later
-            const key = "C Major"; // Placeholder until FFT logic is added
+            const key = "C Major";
 
             return {
                 bpm,

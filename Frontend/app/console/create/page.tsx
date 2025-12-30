@@ -99,6 +99,7 @@ export default function CreatePage() {
   const [quality, setQuality] = useState<Quality>("standard")
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [isRecording, setIsRecording] = useState(false)
+  const [recordingComplete, setRecordingComplete] = useState(false)
   const [songTitle, setSongTitle] = useState("")
   const [selectedGenre, setSelectedGenre] = useState("")
   const [selectedMoods, setSelectedMoods] = useState<string[]>([])
@@ -279,7 +280,7 @@ export default function CreatePage() {
               </div>
               <div className="flex items-center gap-2">
                 <Star className="w-4 h-4 text-irenown-light" />
-                <span>Professional mastering (LANDR)</span>
+                <span>Professional mastering (Master-Pro)</span>
               </div>
               <div className="flex items-center gap-2">
                 <Star className="w-4 h-4 text-irenown-light" />
@@ -380,10 +381,39 @@ export default function CreatePage() {
         </div>
       </div>
 
-      <Button variant="outline" className="w-full h-14 bg-transparent" onClick={() => setIsRecording(!isRecording)}>
-        <Mic className={cn("w-5 h-5 mr-3", isRecording && "text-red-500 animate-pulse")} />
-        {isRecording ? "Stop Recording" : "Record from Microphone"}
-      </Button>
+      <div className="space-y-3">
+        <Button
+          variant="outline"
+          className={cn("w-full h-14 bg-transparent", isRecording && "border-red-500/50 bg-red-500/5 text-red-500")}
+          onClick={() => {
+            if (isRecording) {
+              setIsRecording(false)
+              setRecordingComplete(true)
+            } else {
+              setIsRecording(true)
+              setRecordingComplete(false)
+            }
+          }}
+        >
+          <Mic className={cn("w-5 h-5 mr-3", isRecording && "text-red-500 animate-pulse")} />
+          {isRecording ? "Stop Recording" : "Record from Microphone"}
+        </Button>
+
+        {recordingComplete && !isRecording && (
+          <Button
+            className="w-full h-14 bg-green-500 hover:bg-green-600 text-white animate-in fade-in slide-in-from-top-2"
+            onClick={() => {
+              // Simulate a recorded file
+              const mockFile = new File(["(mock audio data)"], `recording_${Date.now()}.wav`, { type: "audio/wav" })
+              setUploadedFile(mockFile)
+              setRecordingComplete(false)
+            }}
+          >
+            <Upload className="w-5 h-5 mr-3" />
+            Upload Recording
+          </Button>
+        )}
+      </div>
     </div>
   )
 

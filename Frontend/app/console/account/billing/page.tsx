@@ -21,10 +21,9 @@ const plans = [
     price: 0,
     interval: "forever",
     features: ["2 songs/month", "Standard quality", "Watermark on output", "MP3 format", "Community support"],
-    current: false,
   },
   {
-    id: "creator",
+    id: "silver", // Mapped to 'creator' conceptually if needed, but keeping ID consist with DB 'silver'
     name: "Creator",
     price: 9.99,
     interval: "month",
@@ -36,11 +35,9 @@ const plans = [
       "Email support",
       "Save preferences",
     ],
-    current: true,
-    popular: true,
   },
   {
-    id: "pro",
+    id: "gold", // 'pro'
     name: "Pro",
     price: 24.99,
     interval: "month",
@@ -53,7 +50,6 @@ const plans = [
       "Advanced options",
       "API access",
     ],
-    current: false,
   },
 ]
 
@@ -63,18 +59,41 @@ const premiumPacks = [
   { name: "10-Pack", price: 39.99, perSong: 4.0, popular: true },
 ]
 
-const invoices = [
-  { id: "INV-001", date: "Dec 15, 2024", description: "Premium Track - Summer Dreams", amount: 4.99, status: "paid" },
-  { id: "INV-002", date: "Dec 1, 2024", description: "Creator Plan - December 2024", amount: 9.99, status: "paid" },
-  { id: "INV-003", date: "Nov 1, 2024", description: "Creator Plan - November 2024", amount: 9.99, status: "paid" },
-  { id: "INV-004", date: "Oct 15, 2024", description: "Premium Track (3-pack)", amount: 12.99, status: "paid" },
-  { id: "INV-005", date: "Oct 1, 2024", description: "Creator Plan - October 2024", amount: 9.99, status: "paid" },
-]
-
 function BillingContent() {
-  const [selectedPlan, setSelectedPlan] = useState("creator")
+  const [selectedPlan, setSelectedPlan] = useState("silver")
+  const [usageData, setUsageData] = useState<any>(null)
+  const [invoices, setInvoices] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [userTier, setUserTier] = useState("silver")
 
-  const currentPlan = plans.find((p) => p.current)
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [usageRes, invoicesRes] = await Promise.all([
+          apiClient.get('/api/user/usage'),
+          apiClient.get('/api/user/invoices')
+        ])
+
+        setUsageData(usageRes.usage)
+        setUserTier(usageRes.tier)
+        setInvoices(invoicesRes)
+
+        // Auto-select next tier or current?
+        // setSelectedPlan(usageRes.tier) 
+      } catch (error) {
+        console.error("Failed to fetch billing data:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchData()
+  }, [])
+
+  const currentPlan = plans.find((p) => p.id === userTier) || plans[0]
+
+  if (isLoading) {
+    return <BillingLoadingFallback />
+  }
 
   return (
     <div className="space-y-6 pb-20 lg:pb-0 max-w-5xl">
@@ -120,20 +139,22 @@ function BillingContent() {
                   </Button>
                   <Button className="bg-gradient-to-r from-irenown-dark to-irenown-mid hover:from-irenown-mid hover:to-irenown-light">
                     <Zap className="w-4 h-4 mr-2" />
-                    Upgrade to Pro
+                    Upgrade
                   </Button>
                 </div>
               </div>
 
               {/* Usage */}
-              <div className="mt-6 p-4 rounded-xl bg-muted/30">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">Songs used this month</span>
-                  <span className="text-sm text-muted-foreground">15 of 20</span>
+              {usageData && (
+                <div className="mt-6 p-4 rounded-xl bg-muted/30">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">Songs used this month</span>
+                    <span className="text-sm text-muted-foreground">{usageData.used} of {usageData.limit}</span>
+                  </div>
+                  <Progress value={(usageData.used / usageData.limit) * 100} className="h-2" />
+                  <p className="text-xs text-muted-foreground mt-2">Renews: {new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toLocaleDateString()}</p>
                 </div>
-                <Progress value={75} className="h-2" />
-                <p className="text-xs text-muted-foreground mt-2">Renews: January 1, 2025</p>
-              </div>
+              )}
             </CardContent>
           </Card>
 
@@ -145,59 +166,62 @@ function BillingContent() {
             </CardHeader>
             <CardContent>
               <div className="grid md:grid-cols-3 gap-4">
-                {plans.map((plan) => (
-                  <div
-                    key={plan.id}
-                    className={cn(
-                      "relative rounded-xl border p-6 transition-all cursor-pointer",
-                      plan.current
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-primary/50 hover:bg-muted/30",
-                      plan.popular && !plan.current && "border-irenown-mid",
-                    )}
-                    onClick={() => setSelectedPlan(plan.id)}
-                  >
-                    {plan.popular && !plan.current && (
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                        <Badge className="bg-irenown-mid text-primary-foreground">Most Popular</Badge>
-                      </div>
-                    )}
-                    {plan.current && (
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                        <Badge className="bg-primary text-primary-foreground">Current Plan</Badge>
-                      </div>
-                    )}
-
-                    <div className="text-center mb-4">
-                      <h3 className="text-lg font-bold">{plan.name}</h3>
-                      <div className="mt-2">
-                        <span className="text-3xl font-bold">${plan.price}</span>
-                        {plan.price > 0 && <span className="text-muted-foreground">/{plan.interval}</span>}
-                      </div>
-                    </div>
-
-                    <ul className="space-y-2 mb-6">
-                      {plan.features.map((feature, index) => (
-                        <li key={index} className="flex items-center gap-2 text-sm">
-                          <Check className="w-4 h-4 text-green-500 shrink-0" />
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-
-                    <Button
-                      variant={plan.current ? "outline" : "default"}
+                {plans.map((plan) => {
+                  const isCurrent = plan.id === userTier
+                  return (
+                    <div
+                      key={plan.id}
                       className={cn(
-                        "w-full",
-                        !plan.current &&
-                          "bg-gradient-to-r from-irenown-dark to-irenown-mid hover:from-irenown-mid hover:to-irenown-light",
+                        "relative rounded-xl border p-6 transition-all cursor-pointer",
+                        isCurrent
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:border-primary/50 hover:bg-muted/30",
+                        plan.id === "gold" && !isCurrent && "border-irenown-mid",
                       )}
-                      disabled={plan.current}
+                      onClick={() => setSelectedPlan(plan.id)}
                     >
-                      {plan.current ? "Current Plan" : plan.price === 0 ? "Downgrade" : "Upgrade"}
-                    </Button>
-                  </div>
-                ))}
+                      {plan.id === "gold" && !isCurrent && (
+                        <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                          <Badge className="bg-irenown-mid text-primary-foreground">Most Popular</Badge>
+                        </div>
+                      )}
+                      {isCurrent && (
+                        <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                          <Badge className="bg-primary text-primary-foreground">Current Plan</Badge>
+                        </div>
+                      )}
+
+                      <div className="text-center mb-4">
+                        <h3 className="text-lg font-bold">{plan.name}</h3>
+                        <div className="mt-2">
+                          <span className="text-3xl font-bold">${plan.price}</span>
+                          {plan.price > 0 && <span className="text-muted-foreground">/{plan.interval}</span>}
+                        </div>
+                      </div>
+
+                      <ul className="space-y-2 mb-6">
+                        {plan.features.map((feature, index) => (
+                          <li key={index} className="flex items-center gap-2 text-sm">
+                            <Check className="w-4 h-4 text-green-500 shrink-0" />
+                            <span>{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+
+                      <Button
+                        variant={isCurrent ? "outline" : "default"}
+                        className={cn(
+                          "w-full",
+                          !isCurrent &&
+                          "bg-gradient-to-r from-irenown-dark to-irenown-mid hover:from-irenown-mid hover:to-irenown-light",
+                        )}
+                        disabled={isCurrent}
+                      >
+                        {isCurrent ? "Current Plan" : plan.price === 0 ? "Downgrade" : "Upgrade"}
+                      </Button>
+                    </div>
+                  )
+                })}
               </div>
             </CardContent>
           </Card>
@@ -218,12 +242,12 @@ function BillingContent() {
                 <div className="text-center p-4 rounded-lg bg-muted/30">
                   <Star className="w-5 h-5 text-irenown-light mx-auto mb-2" />
                   <p className="text-sm font-medium">Studio-grade</p>
-                  <p className="text-xs text-muted-foreground">ElevenLabs Quality</p>
+                  <p className="text-xs text-muted-foreground">iRenown HD Quality</p>
                 </div>
                 <div className="text-center p-4 rounded-lg bg-muted/30">
                   <Zap className="w-5 h-5 text-irenown-light mx-auto mb-2" />
                   <p className="text-sm font-medium">Pro Mastering</p>
-                  <p className="text-xs text-muted-foreground">LANDR Technology</p>
+                  <p className="text-xs text-muted-foreground">iRenown Mastering Core</p>
                 </div>
                 <div className="text-center p-4 rounded-lg bg-muted/30">
                   <FileText className="w-5 h-5 text-irenown-light mx-auto mb-2" />
@@ -238,10 +262,10 @@ function BillingContent() {
                     key={index}
                     className={cn(
                       "relative rounded-xl border p-4 text-center",
-                      pack.popular ? "border-irenown-mid bg-irenown-mid/5" : "border-border",
+                      index === 2 ? "border-irenown-mid bg-irenown-mid/5" : "border-border",
                     )}
                   >
-                    {pack.popular && (
+                    {index === 2 && (
                       <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                         <Badge className="bg-irenown-mid text-primary-foreground">Best Value</Badge>
                       </div>
@@ -267,117 +291,15 @@ function BillingContent() {
         <TabsContent value="payment" className="space-y-6">
           <Card className="bg-card/50 backdrop-blur-sm border-border/50">
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-lg">Payment Methods</CardTitle>
-                  <CardDescription>Manage your saved payment methods</CardDescription>
-                </div>
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button size="sm">
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add New
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Add Payment Method</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 mt-4">
-                      <div className="space-y-2">
-                        <Label>Card Number</Label>
-                        <Input placeholder="1234 5678 9012 3456" className="bg-muted/50" />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label>Expiry Date</Label>
-                          <Input placeholder="MM/YY" className="bg-muted/50" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>CVC</Label>
-                          <Input placeholder="123" className="bg-muted/50" />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Name on Card</Label>
-                        <Input placeholder="John Doe" className="bg-muted/50" />
-                      </div>
-                      <Button className="w-full">Add Card</Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </div>
+              <CardTitle className="text-lg">Payment Methods</CardTitle>
+              <CardDescription>No payment methods saved (Stripe not connected yet).</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 rounded-xl border border-primary bg-primary/5">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-8 rounded bg-gradient-to-r from-blue-600 to-blue-400 flex items-center justify-center text-white text-xs font-bold">
-                      VISA
-                    </div>
-                    <div>
-                      <p className="font-medium">Visa ending in 4242</p>
-                      <p className="text-sm text-muted-foreground">Expires 12/2026</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge className="bg-primary/20 text-primary">Default</Badge>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-            <CardHeader>
-              <CardTitle className="text-lg">Billing Address</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Full Name</Label>
-                  <Input defaultValue="John Doe" className="bg-muted/50" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Address</Label>
-                  <Input defaultValue="123 Main St" className="bg-muted/50" />
-                </div>
-                <div className="space-y-2">
-                  <Label>City</Label>
-                  <Input defaultValue="New York" className="bg-muted/50" />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>State</Label>
-                    <Input defaultValue="NY" className="bg-muted/50" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>ZIP</Label>
-                    <Input defaultValue="10001" className="bg-muted/50" />
-                  </div>
-                </div>
-                <div className="space-y-2 sm:col-span-2">
-                  <Label>Country</Label>
-                  <Select defaultValue="us">
-                    <SelectTrigger className="bg-muted/50">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="us">United States</SelectItem>
-                      <SelectItem value="ca">Canada</SelectItem>
-                      <SelectItem value="uk">United Kingdom</SelectItem>
-                      <SelectItem value="au">Australia</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <Button className="mt-4">Update Address</Button>
+              {/* Placeholder until Stripe is connected */}
+              <Button size="sm" disabled>
+                <Plus className="w-4 h-4 mr-2" />
+                Add New
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -391,10 +313,6 @@ function BillingContent() {
                   <CardTitle className="text-lg">Billing History</CardTitle>
                   <CardDescription>View and download your invoices</CardDescription>
                 </div>
-                <Button variant="outline" size="sm" className="bg-transparent">
-                  <Download className="w-4 h-4 mr-2" />
-                  Export CSV
-                </Button>
               </div>
             </CardHeader>
             <CardContent>
@@ -410,47 +328,34 @@ function BillingContent() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {invoices.map((invoice) => (
-                    <TableRow key={invoice.id}>
-                      <TableCell className="font-medium">{invoice.id}</TableCell>
-                      <TableCell>{invoice.date}</TableCell>
-                      <TableCell>{invoice.description}</TableCell>
-                      <TableCell>${invoice.amount.toFixed(2)}</TableCell>
-                      <TableCell>
-                        <Badge className="bg-green-500/20 text-green-500 border-green-500/30 capitalize">
-                          {invoice.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Button variant="ghost" size="sm">
-                          <Download className="w-4 h-4" />
-                        </Button>
+                  {invoices.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                        No invoices found
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    invoices.map((invoice: any) => (
+                      <TableRow key={invoice.id}>
+                        <TableCell className="font-medium">{invoice.id}</TableCell>
+                        <TableCell>{invoice.date}</TableCell>
+                        <TableCell>{invoice.description}</TableCell>
+                        <TableCell>${invoice.amount.toFixed(2)}</TableCell>
+                        <TableCell>
+                          <Badge className="bg-green-500/20 text-green-500 border-green-500/30 capitalize">
+                            {invoice.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="sm">
+                            <Download className="w-4 h-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-            <CardHeader>
-              <CardTitle className="text-lg">Upcoming Charges</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between p-4 rounded-xl bg-muted/30">
-                <div className="flex items-center gap-4">
-                  <Calendar className="w-5 h-5 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium">Creator Plan - January 2025</p>
-                    <p className="text-sm text-muted-foreground">January 1, 2025</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="font-bold">$9.99</p>
-                  <p className="text-xs text-muted-foreground">Visa ****4242</p>
-                </div>
-              </div>
             </CardContent>
           </Card>
         </TabsContent>

@@ -56,10 +56,10 @@ export function StudioInterface() {
       });
 
       setProjectData((prev) => ({ ...prev, jobId: data.jobId }))
-    } catch (error) {
+    } catch (error: any) {
       console.error("Production Error:", error)
       setState("upload")
-      alert("Failed to start production. Please try again.")
+      alert(`Failed to start production: ${error.message || "Unknown error"}`)
     }
   }
 

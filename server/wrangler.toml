@@ -1,0 +1,37 @@
+name = "irenown-backend"
+main = "index.js"
+compatibility_date = "2024-03-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+PRODUCTION_AI_KEY_1 = "sk_8cfc91468d29027cbb840b7a9c2767dbb216054f67eebb7b" # ElevenLabs
+PRODUCTION_AI_KEY_2 = "sk-W21BfqtLfCSVudT4GMgStULJ7KpXiUyruOHTVsfGfg5c63pA" # Stability AI
+ASSET_MANAGER_ID = "di4onz3fo"    # Cloudinary Cloud Name
+ASSET_MANAGER_KEY = "441864163865968"   # Cloudinary API Key
+ASSET_MANAGER_SECRET = "N3qn71u7pMsUulpDMQsX3yl9PVQ" # Cloudinary API Secret
+IDENTITY_PROVIDER_ID = "irenown-mp-ai" # Firebase Project ID
+STRIPE_SECRET_KEY = "SECRET" # Stripe not provided in file, keeping placeholder
+STRIPE_WEBHOOK_SECRET = "SECRET" # Stripe not provided in file, keeping placeholder
+
+[[d1_databases]]
+binding = "DB"
+database_name = "irenown-db"
+database_id = "90ac6d35-3274-425c-bc54-418770c6e96f"
+preview_database_id = "90ac6d35-3274-425c-bc54-418770c6e96f"
+
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "irenown-storage"
+preview_bucket_name = "irenown-storage"
+
+[observability]
+enabled = false
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+persist = true
+invocation_logs = true
+
+

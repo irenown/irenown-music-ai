@@ -31,7 +31,7 @@ const testimonials = [
     avatar: "DP",
     rating: 5,
     quote:
-      "I use the Premium tier for client demos. The ElevenLabs quality is genuinely impressive—clients can't tell it's AI-generated until I tell them.",
+      "I use the Premium tier for client demos. The iRenown generation quality is genuinely impressive—clients can't tell it's AI-generated until I tell them.",
   },
   {
     name: "Aisha Williams",

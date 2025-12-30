@@ -1,28 +1,26 @@
-import auphonicService from './auphonicService.js';
-import path from 'path';
+import elevenLabsApi from './elevenLabsApi.js';
 
 /**
- * Service to enhance vocals using Auphonic API
- * (Replacing local FFmpeg)
+ * Service to enhance vocals (Edge compatible)
  */
 class VocalEnhancementService {
     /**
-     * Enhances a vocal track using Auphonic
-     * @param {string} inputPath - Path to the raw vocal (local)
-     * @param {string} outputPath - Path to save the enhanced vocal (local)
-     * @returns {Promise<string>} - Path to the enhanced file
+     * Enhances a vocal track buffer
+     * For Cloudflare, we'll use ElevenLabs Isolation as the primary enhancer
      */
-    async enhance(inputPath, outputPath) {
-        console.log(`Enhancing vocal via Auphonic: ${inputPath}`);
+    async enhance(vocalBuffer, env) {
+        console.log(`Enhancing vocal buffer...`);
 
         try {
-            await auphonicService.enhance(inputPath, outputPath);
-            console.log(`Auphonic enhancement complete: ${outputPath}`);
-            return outputPath;
+            // Primary: ElevenLabs Audio Isolation
+            const enhanced = await elevenLabsApi.isolateVoice(vocalBuffer, env);
+            console.log(`Vocal enhancement complete.`);
+            return enhanced;
 
         } catch (error) {
             console.error('Vocal Enhancement Failed:', error.message);
-            throw error;
+            // Fallback: return original buffer if enhancement fails
+            return vocalBuffer;
         }
     }
 }

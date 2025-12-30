@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { apiClient } from "@/lib/api"
 import {
   User,
   Globe,
@@ -39,15 +40,35 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false)
 
   const [profile, setProfile] = useState({
-    displayName: "John Doe",
-    email: "john@example.com",
-    username: "JohnD",
-    bio: "Independent artist from LA",
-    website: "https://johndoe.com",
+    displayName: "",
+    email: "",
+    username: "",
+    bio: "",
+    website: "",
     spotify: "",
-    instagram: "@johndoe",
+    instagram: "",
     youtube: "",
   })
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const user = apiClient.getUser();
+        if (user) {
+          setProfile(prev => ({
+            ...prev,
+            displayName: user.username || user.email?.split('@')[0] || "User",
+            username: user.username || "user",
+            email: user.email || "",
+            // Bio and social links are not yet in DB, so leaving blank implies 'actual' state (empty) rather than fake data.
+          }));
+        }
+      } catch (error) {
+        console.error("Failed to load profile", error);
+      }
+    };
+    fetchProfile();
+  }, []);
 
   const sessions = [
     { device: "Chrome on Windows", location: "New York, US", current: true, lastActive: "Now" },

@@ -1,87 +1,38 @@
-import cloudinaryPkg from 'cloudinary';
-const { v2: cloudinary } = cloudinaryPkg;
-import fs from 'fs';
-import axios from 'axios';
-import { pipeline } from 'stream/promises';
-
-// Configure Cloudinary
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-    secure: true
-});
-
 /**
  * Service to handle Audio Mixing via Cloudinary
- * (Replacing local FFmpeg)
+ * (Edge compatible)
  */
 class AudioProcessor {
     /**
-     * Mixes a vocal track and an instrumental track using Cloudinary
-     * @param {string} vocalPath - Path to the vocal file
-     * @param {string} instrumentalPath - Path to the instrumental file
-     * @param {string} outputPath - Path to save the final mix
-     * @returns {Promise<string>} - Path to the final mix
+     * Mixes vocal and instrumental buffers using Cloudinary
      */
-    async mixTracks(vocalPath, instrumentalPath, outputPath) {
-        console.log(`Mixing via Cloudinary: ${vocalPath} + ${instrumentalPath}`);
+    async mixTracks(vocalBuffer, instrumentalBuffer, env) {
+        const cloudName = env.ASSET_MANAGER_ID;
+        const apiKey = env.ASSET_MANAGER_KEY;
+        const apiSecret = env.ASSET_MANAGER_SECRET;
+
+        console.log(`Mixing via Cloudinary...`);
 
         try {
-            // 1. Upload Instrumental (Base Track)
-            // Use 'video' resource_type for audio to enable advanced mixing
-            const instUpload = await cloudinary.uploader.upload(instrumentalPath, {
-                resource_type: 'video',
-                folder: 'temp_mix/inst'
-            });
+            // 1. Upload Instrumental (Base Track) to Cloudinary
+            const instUpload = await this.uploadToCloudinary(instrumentalBuffer, 'inst', env);
             const instId = instUpload.public_id;
 
-            // 2. Upload Vocal (Overlay Track)
-            const vocalUpload = await cloudinary.uploader.upload(vocalPath, {
-                resource_type: 'video',
-                folder: 'temp_mix/vocal'
-            });
-            // We need the public_id with : replaced by : for overlay syntax? 
-            // Actually usually just the public_id is fine, but if it has slashes, might need care.
-            // Cloudinary overlay syntax: l_video:<public_id>
-            // Note: Cloudinary public_ids might contain slashes. We usually need to replace / with : in transformations? 
-            // actually standard public_id works in recent versions if quoted or handled. 
-            // Let's use the standard `l_video:folder:id` format (slashes become colons in URLs sometimes, but the SDK handles it if passed as object).
+            // 2. Upload Vocal (Overlay Track) to Cloudinary
+            const vocalUpload = await this.uploadToCloudinary(vocalBuffer, 'vocal', env);
             const vocalId = vocalUpload.public_id.replace(/\//g, ':');
 
             // 3. Generate Transformation URL
-            // We want to overlay the vocal ON TOP of the instrumental
-            const url = cloudinary.url(instId, {
-                resource_type: 'video',
-                format: 'mp3',
-                transformation: [
-                    {
-                        overlay: `video:${vocalId}`
-                    },
-                    {
-                        flags: "layer_apply" // Mixes them
-                    },
-                    // Optional: Normalization or Volume adjustments
-                    // { effect: "volume:loudnorm" } // if supported, or just rely on default mixing
-                ]
-            });
+            // Format: https://res.cloudinary.com/<cloud_name>/video/upload/l_video:<vocal_id>,fl_layer_apply/<inst_id>.mp3
+            const mixUrl = `https://res.cloudinary.com/${cloudName}/video/upload/l_video:${vocalId},fl_layer_apply/${instId}.mp3`;
 
-            console.log(`Generated Mix URL: ${url}`);
+            console.log(`Cloudinary Mix URL: ${mixUrl}`);
 
-            // 4. Download Result
-            const response = await axios({
-                url: url,
-                method: 'GET',
-                responseType: 'stream'
-            });
+            // 4. Fetch the result
+            const response = await fetch(mixUrl);
+            if (!response.ok) throw new Error(`Failed to fetch mix from Cloudinary: ${response.statusText}`);
 
-            await pipeline(response.data, fs.createWriteStream(outputPath));
-            console.log(`Mixed file saved to: ${outputPath}`);
-
-            // Optional: Cleanup Cloudinary assets to save storage?
-            // await cloudinary.api.delete_resources([instUpload.public_id, vocalUpload.public_id], { resource_type: 'video' });
-
-            return outputPath;
+            return await response.arrayBuffer();
 
         } catch (error) {
             console.error('Cloudinary Mixing Failed:', error.message);
@@ -90,15 +41,47 @@ class AudioProcessor {
     }
 
     /**
-     * Extracts a segment of audio (Not fully implemented in Serverless migration yet)
-     * Fallback: Just return input or implement Cloudinary trim
+     * Helper to upload buffer to Cloudinary using signed upload
      */
-    async trimAudio(inputPath, outputPath, startTime, duration) {
-        // Cloudinary supports trimming via { start_offset: "...", duration: "..." }
-        // For now, this might not be critical for the main flow.
-        console.warn('Trim not implemented in Serverless mode');
-        fs.copyFileSync(inputPath, outputPath);
-        return outputPath;
+    async uploadToCloudinary(buffer, folder, env) {
+        const cloudName = env.ASSET_MANAGER_ID;
+        const apiKey = env.ASSET_MANAGER_KEY;
+        const apiSecret = env.ASSET_MANAGER_SECRET;
+        const timestamp = Math.round(new Date().getTime() / 1000);
+
+        const signatureStr = `folder=temp_mix/${folder}&timestamp=${timestamp}${apiSecret}`;
+        const signature = await this.sha1(signatureStr);
+
+        const formData = new FormData();
+        formData.append('file', new Blob([buffer]));
+        formData.append('folder', `temp_mix/${folder}`);
+        formData.append('timestamp', timestamp);
+        formData.append('api_key', apiKey);
+        formData.append('signature', signature);
+        formData.append('resource_type', 'video');
+
+        const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/video/upload`, {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(`Cloudinary Upload Failed: ${error}`);
+        }
+
+        return await response.json();
+    }
+
+    /**
+     * Simple SHA1 implementation for Cloudinary signature
+     */
+    async sha1(str) {
+        const msgUint8 = new TextEncoder().encode(str);
+        const hashBuffer = await crypto.subtle.digest('SHA-1', msgUint8);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        return hashHex;
     }
 }
 

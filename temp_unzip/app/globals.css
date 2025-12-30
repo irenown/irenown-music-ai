@@ -1,0 +1,611 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* Updated to accurate iRenown logo taupe/champagne colors - more muted warm gray-brown */
+:root {
+  --background: oklch(0.08 0.008 70);
+  --foreground: oklch(0.9 0.015 75);
+  --card: oklch(0.12 0.01 70);
+  --card-foreground: oklch(0.9 0.015 75);
+  --popover: oklch(0.1 0.008 70);
+  --popover-foreground: oklch(0.9 0.015 75);
+  --primary: oklch(0.7 0.045 70);
+  --primary-foreground: oklch(0.12 0.01 70);
+  --secondary: oklch(0.18 0.012 70);
+  --secondary-foreground: oklch(0.8 0.03 75);
+  --muted: oklch(0.2 0.01 70);
+  --muted-foreground: oklch(0.55 0.02 70);
+  --accent: oklch(0.62 0.05 65);
+  --accent-foreground: oklch(0.95 0.008 75);
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.95 0.008 75);
+  --border: oklch(0.25 0.015 70);
+  --input: oklch(0.14 0.01 70);
+  --ring: oklch(0.7 0.045 70);
+  /* iRenown taupe/champagne gradient - extracted from logo */
+  --irenown-light: oklch(0.82 0.035 75);
+  --irenown-mid: oklch(0.62 0.04 70);
+  --irenown-dark: oklch(0.45 0.035 65);
+  --irenown-cream: oklch(0.88 0.025 80);
+  --chart-1: oklch(0.7 0.045 70);
+  --chart-2: oklch(0.62 0.05 65);
+  --chart-3: oklch(0.65 0.04 60);
+  --chart-4: oklch(0.72 0.035 80);
+  --chart-5: oklch(0.55 0.22 25);
+  --radius: 0.75rem;
+  --sidebar: oklch(0.1 0.008 70);
+  --sidebar-foreground: oklch(0.9 0.015 75);
+  --sidebar-primary: oklch(0.7 0.045 70);
+  --sidebar-primary-foreground: oklch(0.12 0.01 70);
+  --sidebar-accent: oklch(0.18 0.012 70);
+  --sidebar-accent-foreground: oklch(0.9 0.015 75);
+  --sidebar-border: oklch(0.25 0.015 70);
+  --sidebar-ring: oklch(0.7 0.045 70);
+}
+
+.dark {
+  --background: oklch(0.08 0.008 70);
+  --foreground: oklch(0.9 0.015 75);
+  --card: oklch(0.12 0.01 70);
+  --card-foreground: oklch(0.9 0.015 75);
+  --popover: oklch(0.1 0.008 70);
+  --popover-foreground: oklch(0.9 0.015 75);
+  --primary: oklch(0.7 0.045 70);
+  --primary-foreground: oklch(0.12 0.01 70);
+  --secondary: oklch(0.18 0.012 70);
+  --secondary-foreground: oklch(0.8 0.03 75);
+  --muted: oklch(0.2 0.01 70);
+  --muted-foreground: oklch(0.55 0.02 70);
+  --accent: oklch(0.62 0.05 65);
+  --accent-foreground: oklch(0.95 0.008 75);
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.95 0.008 75);
+  --border: oklch(0.25 0.015 70);
+  --input: oklch(0.14 0.01 70);
+  --ring: oklch(0.7 0.045 70);
+  --irenown-light: oklch(0.82 0.035 75);
+  --irenown-mid: oklch(0.62 0.04 70);
+  --irenown-dark: oklch(0.45 0.035 65);
+  --irenown-cream: oklch(0.88 0.025 80);
+  --chart-1: oklch(0.7 0.045 70);
+  --chart-2: oklch(0.62 0.05 65);
+  --chart-3: oklch(0.65 0.04 60);
+  --chart-4: oklch(0.72 0.035 80);
+  --chart-5: oklch(0.55 0.22 25);
+  --sidebar: oklch(0.1 0.008 70);
+  --sidebar-foreground: oklch(0.9 0.015 75);
+  --sidebar-primary: oklch(0.7 0.045 70);
+  --sidebar-primary-foreground: oklch(0.12 0.01 70);
+  --sidebar-accent: oklch(0.18 0.012 70);
+  --sidebar-accent-foreground: oklch(0.9 0.015 75);
+  --sidebar-border: oklch(0.25 0.015 70);
+  --sidebar-ring: oklch(0.7 0.045 70);
+}
+
+@theme inline {
+  --font-sans: "Inter", "Inter Fallback", system-ui, sans-serif;
+  --font-mono: "Geist Mono", "Geist Mono Fallback", monospace;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  /* Renamed to irenown colors */
+  --color-irenown-light: var(--irenown-light);
+  --color-irenown-mid: var(--irenown-mid);
+  --color-irenown-dark: var(--irenown-dark);
+  --color-irenown-cream: var(--irenown-cream);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Custom scrollbar updated to iRenown taupe colors */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: oklch(0.1 0.008 70);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, oklch(0.5 0.035 70), oklch(0.35 0.03 65));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, oklch(0.58 0.04 70), oklch(0.42 0.035 68));
+}
+
+/* Audio waveform animation */
+@keyframes waveform {
+  0%,
+  100% {
+    height: 20%;
+  }
+  50% {
+    height: 100%;
+  }
+}
+
+.waveform-bar {
+  animation: waveform 1s ease-in-out infinite;
+}
+
+/* Updated glow effects to iRenown taupe theme */
+.glow-irenown {
+  box-shadow: 0 0 20px oklch(0.7 0.045 70 / 0.4), 0 0 40px oklch(0.7 0.045 70 / 0.2), 0 0 60px oklch(0.7 0.045 70 / 0.1);
+}
+
+.glow-primary {
+  box-shadow: 0 0 20px oklch(0.7 0.045 70 / 0.3), 0 0 40px oklch(0.7 0.045 70 / 0.15);
+}
+
+.glow-accent {
+  box-shadow: 0 0 20px oklch(0.62 0.05 65 / 0.3), 0 0 40px oklch(0.62 0.05 65 / 0.15);
+}
+
+/* Keep aliases for compatibility */
+.glow-bronze {
+  box-shadow: 0 0 20px oklch(0.7 0.045 70 / 0.4), 0 0 40px oklch(0.7 0.045 70 / 0.2), 0 0 60px oklch(0.7 0.045 70 / 0.1);
+}
+
+.glow-silver {
+  box-shadow: 0 0 20px oklch(0.7 0.045 70 / 0.4), 0 0 40px oklch(0.7 0.045 70 / 0.2), 0 0 60px oklch(0.7 0.045 70 / 0.1);
+}
+
+/* Updated shimmer to iRenown taupe tones */
+@keyframes shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    oklch(0.62 0.04 70) 0%,
+    oklch(0.82 0.035 75) 25%,
+    oklch(0.9 0.02 80) 50%,
+    oklch(0.82 0.035 75) 75%,
+    oklch(0.62 0.04 70) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 3s ease-in-out infinite;
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+/* Floating animation */
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Updated pulse glow to iRenown colors */
+@keyframes pulse-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 20px oklch(0.7 0.045 70 / 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px oklch(0.7 0.045 70 / 0.5), 0 0 60px oklch(0.7 0.045 70 / 0.3);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Updated gradient border to iRenown theme */
+@keyframes gradient-rotate {
+  0% {
+    --angle: 0deg;
+  }
+  100% {
+    --angle: 360deg;
+  }
+}
+
+@property --angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.gradient-border {
+  position: relative;
+  background: var(--card);
+  border-radius: var(--radius);
+}
+
+.gradient-border::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    var(--angle),
+    oklch(0.82 0.035 75),
+    oklch(0.45 0.035 65),
+    oklch(0.62 0.05 65),
+    oklch(0.82 0.035 75)
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: gradient-rotate 4s linear infinite;
+}
+
+/* Slide in animations */
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.6s ease-out forwards;
+}
+
+.animate-slide-left {
+  animation: slide-in-left 0.6s ease-out forwards;
+}
+
+.animate-slide-right {
+  animation: slide-in-right 0.6s ease-out forwards;
+}
+
+/* Stagger delays */
+.delay-100 {
+  animation-delay: 100ms;
+}
+.delay-200 {
+  animation-delay: 200ms;
+}
+.delay-300 {
+  animation-delay: 300ms;
+}
+.delay-400 {
+  animation-delay: 400ms;
+}
+.delay-500 {
+  animation-delay: 500ms;
+}
+
+/* Updated text gradients to iRenown taupe/champagne palette */
+.text-silver-gradient {
+  background: linear-gradient(135deg, oklch(0.88 0.025 80) 0%, oklch(0.58 0.04 68) 50%, oklch(0.88 0.025 80) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.text-bronze-gradient {
+  background: linear-gradient(135deg, oklch(0.85 0.03 78) 0%, oklch(0.55 0.04 68) 50%, oklch(0.85 0.03 78) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.text-irenown-gradient {
+  background: linear-gradient(135deg, oklch(0.88 0.025 80) 0%, oklch(0.62 0.04 70) 50%, oklch(0.45 0.035 65) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Audio visualizer bars */
+@keyframes equalizer {
+  0%,
+  100% {
+    transform: scaleY(0.3);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+.equalizer-bar {
+  transform-origin: bottom;
+}
+
+.equalizer-bar:nth-child(1) {
+  animation: equalizer 0.8s ease-in-out infinite;
+}
+.equalizer-bar:nth-child(2) {
+  animation: equalizer 0.6s ease-in-out infinite 0.1s;
+}
+.equalizer-bar:nth-child(3) {
+  animation: equalizer 0.9s ease-in-out infinite 0.2s;
+}
+.equalizer-bar:nth-child(4) {
+  animation: equalizer 0.7s ease-in-out infinite 0.3s;
+}
+.equalizer-bar:nth-child(5) {
+  animation: equalizer 0.85s ease-in-out infinite 0.15s;
+}
+
+/* New ambient glow animation */
+@keyframes ambient-glow {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.1);
+  }
+}
+
+.animate-ambient-glow {
+  animation: ambient-glow 4s ease-in-out infinite;
+}
+
+/* Updated shine sweep to iRenown cream */
+@keyframes shine-sweep {
+  0% {
+    transform: translateX(-100%) skewX(-15deg);
+  }
+  100% {
+    transform: translateX(200%) skewX(-15deg);
+  }
+}
+
+.shine-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.shine-effect::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, oklch(0.92 0.02 80 / 0.3), transparent);
+  animation: shine-sweep 3s ease-in-out infinite;
+}
+
+/* Rotating border glow */
+@keyframes border-glow-rotate {
+  0% {
+    filter: hue-rotate(0deg);
+  }
+  100% {
+    filter: hue-rotate(20deg);
+  }
+}
+
+.animate-border-glow {
+  animation: border-glow-rotate 5s linear infinite;
+}
+
+/* Floating particles animation */
+@keyframes particle-float {
+  0%,
+  100% {
+    transform: translateY(0) translateX(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100vh) translateX(20px) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+.animate-particle {
+  animation: particle-float 8s ease-in-out infinite;
+}
+
+/* Scale bounce animation */
+@keyframes scale-bounce {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.animate-scale-bounce {
+  animation: scale-bounce 2s ease-in-out infinite;
+}
+
+/* Adding mobile-first responsive utilities */
+
+/* Safe area padding for mobile devices with notches */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Mobile touch targets - minimum 44px */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Hide scrollbar on mobile for cleaner look */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Mobile card spacing */
+@media (max-width: 640px) {
+  .mobile-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mobile-stack {
+    flex-direction: column;
+  }
+
+  .mobile-full-width {
+    width: 100%;
+  }
+}
+
+/* Smooth momentum scrolling for iOS */
+.smooth-scroll {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Bottom navigation safe area */
+.bottom-nav-safe {
+  padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* Mobile modal adjustments */
+@media (max-width: 640px) {
+  .mobile-modal {
+    max-height: calc(100vh - 4rem);
+    margin: 0;
+    border-radius: 1rem 1rem 0 0;
+  }
+}
+
+/* Responsive text truncation */
+.line-clamp-1 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/* Mobile horizontal scroll container */
+.mobile-scroll-x {
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mobile-scroll-x > * {
+  scroll-snap-align: start;
+}
+
+/* Prevent text selection on interactive elements */
+.no-select {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Active states for touch devices */
+@media (hover: none) {
+  .touch-active:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+  }
+}
+
+/* Improved focus states for accessibility */
+.focus-ring:focus-visible {
+  outline: 2px solid oklch(0.7 0.045 70);
+  outline-offset: 2px;
+}

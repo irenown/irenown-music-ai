@@ -1,10 +1,12 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
+import { auth } from "@/lib/firebase"
+import { onAuthStateChanged, type User as FirebaseUser } from "firebase/auth"
 import {
   Home,
   PlusCircle,
@@ -33,6 +35,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+// Import apiClient to get DB user details
+import { apiClient } from "@/lib/api"
 
 interface ConsoleLayoutProps {
   children: React.ReactNode
@@ -40,8 +44,8 @@ interface ConsoleLayoutProps {
 
 const mainNavItems = [
   { icon: Home, label: "Dashboard", href: "/console" },
-  { icon: PlusCircle, label: "Create New", href: "/console/create", highlight: true },
-  { icon: FolderOpen, label: "My Projects", href: "/console/projects", badge: 47 },
+  { icon: PlusCircle, label: "Create New", href: "/studio", highlight: true },
+  { icon: FolderOpen, label: "My Projects", href: "/console/projects" }, // Removed badge
 ]
 
 const accountNavItems = [
@@ -57,13 +61,70 @@ const otherNavItems = [
 
 export function ConsoleLayout({ children }: ConsoleLayoutProps) {
   const pathname = usePathname()
+  const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [searchFocused, setSearchFocused] = useState(false)
+  const [user, setUser] = useState<FirebaseUser | null>(null)
+  // Add state for DB user details (username, tier)
+  const [dbUser, setDbUser] = useState<any>(null)
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      setUser(currentUser)
+      if (currentUser) {
+        // Fetch DB user for accurate username/tier
+        try {
+          const localUser = apiClient.getUser()
+          if (localUser) {
+            setDbUser(localUser)
+          }
+          // Optionally refetch to be sure?
+          // const refreshed = await apiClient.get('/api/user/me') ...
+        } catch (e) {
+          console.error("Failed to load db user in layout", e)
+        }
+      }
+    })
+    return () => unsubscribe()
+  }, [])
+
+  const handleSignOut = async () => {
+    try {
+      apiClient.clearAuth() // Clear local storage too
+      await auth.signOut()
+      router.push("/auth/signin")
+    } catch (error) {
+      console.error("Error signing out:", error)
+    }
+  }
 
   const isActive = (href: string) => {
     if (href === "/console") return pathname === "/console"
     return pathname.startsWith(href)
   }
+
+  // Get user initials
+  const getInitials = () => {
+    // Prefer DB username
+    if (dbUser?.username) {
+      return dbUser.username.slice(0, 2).toUpperCase()
+    }
+    if (!user) return "JD"
+    if (user.displayName) {
+      return user.displayName
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
+    }
+    return user.email?.substring(0, 2).toUpperCase() || "US"
+  }
+
+  // Use DB username if available, else Firebase, else fallback
+  const displayName = dbUser?.username || user?.displayName || user?.email?.split("@")[0] || "User"
+  const displayEmail = user?.email || "user@example.com"
+  const displayTier = dbUser?.tier ? `${dbUser.tier.charAt(0).toUpperCase() + dbUser.tier.slice(1)} Plan` : "Free Plan"
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -124,11 +185,7 @@ export function ConsoleLayout({ children }: ConsoleLayoutProps) {
                     )}
                   />
                   <span className="flex-1">{item.label}</span>
-                  {item.badge && (
-                    <Badge variant="secondary" className="text-xs bg-muted text-muted-foreground">
-                      {item.badge}
-                    </Badge>
-                  )}
+                  {/* Badge removed */}
                   {item.highlight && <Sparkles className="w-4 h-4 text-irenown-light animate-pulse" />}
                 </Link>
               ))}
@@ -186,11 +243,11 @@ export function ConsoleLayout({ children }: ConsoleLayoutProps) {
         <div className="p-4 border-t border-sidebar-border">
           <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-irenown-light to-irenown-dark flex items-center justify-center text-primary-foreground font-semibold">
-              JD
+              {getInitials()}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">John Doe</p>
-              <p className="text-xs text-muted-foreground">Creator Plan</p>
+              <p className="text-sm font-medium truncate">{displayName}</p>
+              <p className="text-xs text-muted-foreground">{displayTier}</p>
             </div>
           </div>
         </div>
@@ -243,7 +300,7 @@ export function ConsoleLayout({ children }: ConsoleLayoutProps) {
               size="sm"
               className="hidden md:flex bg-gradient-to-r from-irenown-dark to-irenown-mid hover:from-irenown-mid hover:to-irenown-light text-primary-foreground"
             >
-              <Link href="/console/create">
+              <Link href="/studio">
                 <PlusCircle className="w-4 h-4 mr-2" />
                 Create New
               </Link>
@@ -254,9 +311,7 @@ export function ConsoleLayout({ children }: ConsoleLayoutProps) {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="relative h-10 w-10">
                   <Bell className="w-5 h-5" />
-                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
-                    2
-                  </span>
+                  {/* Empty state - no red dot if no notifications */}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-[calc(100vw-2rem)] sm:w-80 max-w-sm">
@@ -264,15 +319,8 @@ export function ConsoleLayout({ children }: ConsoleLayoutProps) {
                   <p className="font-semibold">Notifications</p>
                 </div>
                 <div className="p-2 space-y-2 max-h-[60vh] overflow-y-auto smooth-scroll">
-                  <div className="p-2 rounded-lg hover:bg-muted/50 cursor-pointer active:bg-muted/70">
-                    <p className="text-sm font-medium">Your song is ready!</p>
-                    <p className="text-xs text-muted-foreground">"Summer Dreams" has finished processing</p>
-                    <p className="text-xs text-muted-foreground mt-1">2 minutes ago</p>
-                  </div>
-                  <div className="p-2 rounded-lg hover:bg-muted/50 cursor-pointer active:bg-muted/70">
-                    <p className="text-sm font-medium">Usage reminder</p>
-                    <p className="text-xs text-muted-foreground">You've used 75% of your monthly songs</p>
-                    <p className="text-xs text-muted-foreground mt-1">1 hour ago</p>
+                  <div className="p-4 text-center text-muted-foreground text-sm">
+                    No new notifications
                   </div>
                 </div>
                 <div className="p-2 border-t border-border">
@@ -288,16 +336,16 @@ export function ConsoleLayout({ children }: ConsoleLayoutProps) {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center gap-2 px-2 h-10">
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-irenown-light to-irenown-dark flex items-center justify-center text-primary-foreground text-sm font-semibold">
-                    JD
+                    {getInitials()}
                   </div>
                   <ChevronDown className="w-4 h-4 text-muted-foreground hidden sm:block" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <div className="p-3 border-b border-border">
-                  <p className="font-semibold">John Doe</p>
-                  <p className="text-sm text-muted-foreground">john@example.com</p>
-                  <Badge className="mt-2 bg-primary/10 text-primary hover:bg-primary/20">Creator Plan</Badge>
+                  <p className="font-semibold">{displayName}</p>
+                  <p className="text-sm text-muted-foreground">{displayEmail}</p>
+                  <Badge className="mt-2 bg-primary/10 text-primary hover:bg-primary/20">{displayTier}</Badge>
                 </div>
                 <DropdownMenuItem asChild>
                   <Link href="/console" className="cursor-pointer">
@@ -331,11 +379,9 @@ export function ConsoleLayout({ children }: ConsoleLayoutProps) {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/" className="cursor-pointer text-destructive focus:text-destructive">
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Log Out
-                  </Link>
+                <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-destructive focus:text-destructive">
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Log Out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -359,10 +405,10 @@ export function ConsoleLayout({ children }: ConsoleLayoutProps) {
               <span className="text-[10px] sm:text-xs">Home</span>
             </Link>
             <Link
-              href="/console/create"
+              href="/studio"
               className={cn(
                 "flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-colors touch-target min-w-[60px]",
-                pathname === "/console/create" ? "text-primary" : "text-muted-foreground active:text-foreground",
+                pathname === "/studio" ? "text-primary" : "text-muted-foreground active:text-foreground",
               )}
             >
               <div className="relative">
@@ -426,11 +472,9 @@ export function ConsoleLayout({ children }: ConsoleLayoutProps) {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/" className="cursor-pointer text-destructive">
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Log Out
-                  </Link>
+                <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-destructive">
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Log Out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

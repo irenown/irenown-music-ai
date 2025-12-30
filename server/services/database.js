@@ -1,83 +1,9 @@
-import Database from 'better-sqlite3';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import bcrypt from 'bcryptjs';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Ensure the db directory exists
-const dbPath = path.join(__dirname, '..', '..', 'db', 'irenown.db');
-
+/**
+ * Service to handle Cloudflare D1 Database operations
+ */
 class DatabaseService {
-    constructor() {
-        this.db = new Database(dbPath, { verbose: console.log });
-        this.init();
-    }
-
-    init() {
-        // Users Table
-        this.db.exec(`
-            CREATE TABLE IF NOT EXISTS users (
-                id TEXT PRIMARY KEY,
-                username TEXT UNIQUE NOT NULL,
-                email TEXT UNIQUE,
-                password_hash TEXT,
-                api_key TEXT UNIQUE NOT NULL,
-                tier TEXT DEFAULT 'silver',
-                stripe_customer_id TEXT,
-                subscription_id TEXT,
-                subscription_status TEXT,
-                premium_credits INTEGER DEFAULT 0,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
-
-        // Projects Table
-        this.db.exec(`
-            CREATE TABLE IF NOT EXISTS projects (
-                id TEXT PRIMARY KEY,
-                user_id TEXT,
-                name TEXT NOT NULL,
-                genre TEXT,
-                bpm INTEGER,
-                mix_url TEXT,
-                instrumental_url TEXT,
-                vocal_url TEXT,
-                status TEXT DEFAULT 'completed',
-                quality TEXT DEFAULT 'standard',
-                storage_provider TEXT DEFAULT 'local',
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES users(id)
-            )
-        `);
-
-        // Usage Tracking Table
-        this.db.exec(`
-            CREATE TABLE IF NOT EXISTS usage_tracking (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id TEXT,
-                month TEXT,
-                standard_count INTEGER DEFAULT 0,
-                premium_count INTEGER DEFAULT 0,
-                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE(user_id, month)
-            )
-        `);
-
-        // Seed default user if not exists for MVP
-        const seedUser = this.db.prepare('SELECT id FROM users WHERE username = ?').get('irenown_admin');
-        if (!seedUser) {
-            this.prepare('INSERT INTO users (id, username, api_key, tier) VALUES (?, ?, ?, ?)')
-                .run('user_admin_01', 'irenown_admin', 'irenown_dev_key_2025', 'platinum');
-
-            // Also seed the demo user
-            const demoPassHash = bcrypt.hashSync('demo123', 10);
-            this.prepare('INSERT INTO users (id, username, email, password_hash, api_key, tier) VALUES (?, ?, ?, ?, ?, ?)')
-                .run('user_demo_01', 'Demo User', 'demo@irenown.com', demoPassHash, 'irenown_demo_key_2025', 'gold');
-
-            console.log('✅ Default production and demo users seeded.');
-        }
+    constructor(db) {
+        this.db = db;
     }
 
     // Generic Methods
@@ -85,39 +11,59 @@ class DatabaseService {
         return this.db.prepare(sql);
     }
 
-    transaction(fn) {
-        return this.db.transaction(fn);
-    }
-
     // Project Logic
-    saveProject(project) {
-        const stmt = this.db.prepare(`
-            INSERT INTO projects (id, user_id, name, genre, bpm, mix_url, instrumental_url, vocal_url)
-            VALUES (@id, @user_id, @name, @genre, @bpm, @mix_url, @instrumental_url, @vocal_url)
-        `);
-        return stmt.run(project);
+    async saveProject(project) {
+        return await this.db.prepare(`
+            INSERT INTO projects (id, user_id, name, genre, bpm, mix_url, instrumental_url, vocal_url, quality, storage_provider, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                mix_url = excluded.mix_url,
+                instrumental_url = excluded.instrumental_url,
+                vocal_url = excluded.vocal_url,
+                status = excluded.status,
+                bpm = excluded.bpm,
+                updated_at = CURRENT_TIMESTAMP
+        `).bind(
+            project.id || null,
+            project.user_id || null,
+            project.name || null,
+            project.genre || null,
+            project.bpm || null,
+            project.mix_url || null,
+            project.instrumental_url || null,
+            project.vocal_url || null,
+            project.quality || 'standard',
+            project.storage_provider || 'r2',
+            project.status || 'completed'
+        ).run();
     }
 
-    getUserProjects(userId) {
-        return this.db.prepare('SELECT * FROM projects WHERE user_id = ? ORDER BY created_at DESC').all(userId);
+    async updateProjectStatus(projectId, status) {
+        return await this.db.prepare('UPDATE projects SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+            .bind(status, projectId).run();
     }
 
-    getProjectById(projectId) {
-        return this.db.prepare('SELECT * FROM projects WHERE id = ?').get(projectId);
+    async getUserProjects(userId) {
+        const { results } = await this.db.prepare('SELECT * FROM projects WHERE user_id = ? ORDER BY created_at DESC').bind(userId).all();
+        return results;
     }
 
-    deleteProject(projectId) {
-        return this.db.prepare('DELETE FROM projects WHERE id = ?').run(projectId);
+    async getProjectById(projectId) {
+        return await this.db.prepare('SELECT * FROM projects WHERE id = ?').bind(projectId).first();
+    }
+
+    async deleteProject(projectId) {
+        return await this.db.prepare('DELETE FROM projects WHERE id = ?').bind(projectId).run();
     }
 
     // Usage Tracking Logic
     async checkUsageLimit(userId, tier) {
         const currentMonth = new Date().toISOString().slice(0, 7); // "YYYY-MM"
 
-        const usage = this.db.prepare(`
+        const usage = await this.db.prepare(`
             SELECT * FROM usage_tracking 
             WHERE user_id = ? AND month = ?
-        `).get(userId, currentMonth);
+            `).bind(userId, currentMonth).first();
 
         const limits = {
             silver: 20,
@@ -136,39 +82,102 @@ class DatabaseService {
         };
     }
 
-    incrementUsage(userId, isPremium = false) {
+    async incrementUsage(userId, isPremium = false) {
         const currentMonth = new Date().toISOString().slice(0, 7);
         const column = isPremium ? 'premium_count' : 'standard_count';
 
-        return this.db.prepare(`
-            INSERT INTO usage_tracking (user_id, month, ${column}) 
-            VALUES (?, ?, 1)
+        // D1 doesn't support ON CONFLICT(user_id, month) as easily if they aren't unique keys, 
+        // but the table definition in the original init() had UNIQUE(user_id, month).
+        // Let's use an UPSERT style query compatible with D1 (SQLite 3.3x+).
+        return await this.db.prepare(`
+            INSERT INTO usage_tracking(user_id, month, ${column}) 
+            VALUES(?, ?, 1)
             ON CONFLICT(user_id, month) DO UPDATE SET 
                 ${column} = ${column} + 1,
-                updated_at = CURRENT_TIMESTAMP
-        `).run(userId, currentMonth);
+            updated_at = CURRENT_TIMESTAMP
+                `).bind(userId, currentMonth).run();
     }
 
     // Auth Logic
-    getUserByApiKey(apiKey) {
-        return this.db.prepare('SELECT * FROM users WHERE api_key = ?').get(apiKey);
+    async getUserByApiKey(apiKey) {
+        return await this.db.prepare('SELECT * FROM users WHERE api_key = ?').bind(apiKey).first();
     }
 
-    getUserByEmail(email) {
-        return this.db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+    async getUserByEmail(email) {
+        return await this.db.prepare('SELECT * FROM users WHERE email = ?').bind(email).first();
     }
 
-    getUserById(userId) {
-        return this.db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+    async getUserById(userId) {
+        return await this.db.prepare('SELECT * FROM users WHERE id = ?').bind(userId).first();
     }
 
-    createUser(user) {
-        const stmt = this.db.prepare(`
-            INSERT INTO users (id, username, email, password_hash, api_key, tier)
-            VALUES (@id, @username, @email, @password_hash, @api_key, @tier)
-        `);
-        return stmt.run(user);
+    async createUser(user) {
+        return await this.db.prepare(`
+            INSERT INTO users(id, username, email, password_hash, api_key, tier)
+            VALUES(?, ?, ?, ?, ?, ?)
+                `).bind(
+            user.id || null,
+            user.username || null,
+            user.email || null,
+            user.password_hash || null,
+            user.api_key || null,
+            user.tier || 'silver'
+        ).run();
+    }
+    async updateUserId(oldId, newId) {
+        const user = await this.getUserById(oldId);
+        if (!user) return false;
+
+        // Strategy to handle UNIQUE constraints on username, email, api_key:
+        // 1. Create new user with temporary unique values
+        // 2. Move child records
+        // 3. Delete old user (freeing up the unique values)
+        // 4. Update new user to restore original values
+
+        const tempSuffix = `_mig_${Date.now()}`;
+
+        try {
+            // 1. Insert new user (copy) with temp unique fields
+            await this.db.prepare(`
+                INSERT INTO users(id, username, email, password_hash, api_key, tier, stripe_customer_id, subscription_id, subscription_status, premium_credits, created_at)
+                VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `).bind(
+                newId,
+                `${user.username}${tempSuffix}`,
+                user.email ? `${user.email}${tempSuffix}` : null, // append to email if exists 
+                user.password_hash,
+                `${user.api_key}${tempSuffix}`,
+                user.tier,
+                user.stripe_customer_id, user.subscription_id, user.subscription_status, user.premium_credits, user.created_at
+            ).run();
+
+            // 2. Update child tables
+            await this.db.prepare('UPDATE projects SET user_id = ? WHERE user_id = ?').bind(newId, oldId).run();
+            await this.db.prepare('UPDATE usage_tracking SET user_id = ? WHERE user_id = ?').bind(newId, oldId).run();
+
+            // 3. Delete old user
+            await this.db.prepare('DELETE FROM users WHERE id = ?').bind(oldId).run();
+
+            // 4. Restore original unique values
+            await this.db.prepare(`
+                UPDATE users 
+                SET username = ?, email = ?, api_key = ?
+            WHERE id = ?
+                `).bind(user.username, user.email, user.api_key, newId).run();
+
+            return true;
+        } catch (error) {
+            console.error('Migration failed:', error);
+            // Verify if we need to rollback manually (delete newId if exists)
+            // But strict rollback is hard. 
+            throw error;
+        }
+    }
+
+    async usernameExists(username) {
+        const result = await this.db.prepare('SELECT 1 FROM users WHERE username = ?').bind(username).first();
+        return !!result;
     }
 }
 
-export default new DatabaseService();
+export default DatabaseService;

@@ -35,7 +35,7 @@ const faqs = [
       },
       {
         q: "What's the difference between Standard and Premium quality?",
-        a: "Standard quality uses Stable Audio for instrumental generation and is included in all subscription tiers. Premium quality uses ElevenLabs for studio-grade output and is available as a pay-per-song option for professional releases.",
+        a: "Standard quality uses our Sonic Foundation Engine for instrumental generation and is included in all subscription tiers. Premium quality uses the iRenown HD Generation Core for studio-grade output and is available as a pay-per-song option for professional releases.",
       },
       {
         q: "Can I cancel my subscription anytime?",
@@ -141,15 +141,13 @@ export default function FAQPage() {
                           >
                             <span className="font-medium text-foreground">{item.q}</span>
                             <ChevronDown
-                              className={`h-5 w-5 shrink-0 text-muted-foreground transition-transform ${
-                                isOpen ? "rotate-180" : ""
-                              }`}
+                              className={`h-5 w-5 shrink-0 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""
+                                }`}
                             />
                           </button>
                           <div
-                            className={`overflow-hidden transition-all duration-300 ${
-                              isOpen ? "max-h-96 mt-4" : "max-h-0"
-                            }`}
+                            className={`overflow-hidden transition-all duration-300 ${isOpen ? "max-h-96 mt-4" : "max-h-0"
+                              }`}
                           >
                             <p className="text-muted-foreground">{item.a}</p>
                           </div>

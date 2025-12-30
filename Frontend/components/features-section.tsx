@@ -6,7 +6,7 @@ const features = [
     icon: Mic,
     title: "AI Vocal Enhancement",
     description:
-      "Professional noise reduction, pitch correction, and vocal clarity powered by Adobe Podcast technology.",
+      "Professional noise reduction, pitch correction, and vocal clarity powered by our iRenown Neural Vocal Engine.",
     highlight: true,
   },
   {
@@ -18,7 +18,7 @@ const features = [
   {
     icon: Sliders,
     title: "Pro Mixing & Mastering",
-    description: "Industry-standard processing with LANDR integration for radio-ready final tracks.",
+    description: "Industry-standard processing with the iRenown Master-Pro Suite for radio-ready final tracks.",
     highlight: false,
   },
   {
@@ -42,7 +42,7 @@ const features = [
   {
     icon: Sparkles,
     title: "Premium Quality Tier",
-    description: "ElevenLabs-powered generation for studio-grade professional releases.",
+    description: "iRenown HD Generation Core for studio-grade professional releases.",
     highlight: true,
   },
   {
@@ -78,24 +78,21 @@ export function FeaturesSection() {
           {features.map((feature, index) => (
             <AnimatedSection key={index} delay={index * 75}>
               <div
-                className={`group relative rounded-2xl border p-6 transition-all duration-300 hover:-translate-y-1 ${
-                  feature.highlight
+                className={`group relative rounded-2xl border p-6 transition-all duration-300 hover:-translate-y-1 ${feature.highlight
                     ? "border-primary/50 bg-primary/5 hover:bg-primary/10 hover:glow-bronze"
                     : "border-border bg-card/50 hover:border-primary/30 hover:bg-card"
-                }`}
+                  }`}
               >
                 {/* Icon */}
                 <div
-                  className={`mb-4 flex h-12 w-12 items-center justify-center rounded-xl transition-colors ${
-                    feature.highlight
+                  className={`mb-4 flex h-12 w-12 items-center justify-center rounded-xl transition-colors ${feature.highlight
                       ? "bg-primary/20 group-hover:bg-primary/30"
                       : "bg-secondary group-hover:bg-primary/20"
-                  }`}
+                    }`}
                 >
                   <feature.icon
-                    className={`h-6 w-6 transition-colors ${
-                      feature.highlight ? "text-primary" : "text-muted-foreground group-hover:text-primary"
-                    }`}
+                    className={`h-6 w-6 transition-colors ${feature.highlight ? "text-primary" : "text-muted-foreground group-hover:text-primary"
+                      }`}
                   />
                 </div>
 

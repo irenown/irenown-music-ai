@@ -38,7 +38,7 @@ export function ProcessingView({ projectData, onFinish }: ProcessingViewProps) {
 
     const pollJob = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/api/jobs/${projectData.jobId}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/jobs/${projectData.jobId}`, {
           headers: {
             "x-api-key": process.env.NEXT_PUBLIC_DEV_KEY || "irenown_dev_key_2025",
           },
