@@ -39,30 +39,18 @@ class QueueService {
             const finalBpm = bpm || analysis.bpm;
 
             // 4. Music Generation
-            // TEMPORARY FIX: Use ElevenLabs for all tiers until Stability AI endpoint is resolved
-            console.log(`Generating music with ElevenLabs (tier: ${tier})`);
-            instrumentalBuffer = await elevenLabsApi.generateMusic({
-                prompt: `melodic ${genre} instrumental, key of ${analysis.key}, ${finalBpm} BPM`,
-                duration: analysis.duration
-            }, this.env);
+            // TEMPORARY WORKAROUND: Generate silent instrumental until API endpoints are fixed
+            console.log(`[TEMP] Generating silent instrumental track (${analysis.duration}s)`);
 
-            /* DISABLED UNTIL STABILITY AI ENDPOINT IS FIXED
-            let instrumentalBuffer;
-            const isPremium = (tier === 'platinum' || tier === 'gold');
+            // Create a silent WAV file (44.1kHz, 16-bit, mono)
+            const sampleRate = 44100;
+            const numSamples = Math.floor(analysis.duration * sampleRate);
+            const wavHeader = this.createWavHeader(numSamples, sampleRate);
+            const silentSamples = new Uint8Array(numSamples * 2); // 16-bit = 2 bytes per sample
 
-            if (isPremium) {
-                instrumentalBuffer = await elevenLabsApi.generateMusic({
-                    prompt: `melodic ${genre} instrumental, key of ${analysis.key}, ${finalBpm} BPM`,
-                    duration: analysis.duration
-                }, this.env);
-            } else {
-                instrumentalBuffer = await stabilityApi.generateMusic({
-                    prompt: `catchy melodic ${genre} instrumental arrangement`,
-                    bpm: finalBpm,
-                    duration: analysis.duration
-                }, this.env);
-            }
-            */
+            const instrumentalBuffer = new Uint8Array(wavHeader.length + silentSamples.length);
+            instrumentalBuffer.set(wavHeader, 0);
+            instrumentalBuffer.set(silentSamples, wavHeader.length);
 
             // 5. Mixing & Mastering (Cloudinary-based mixing)
             const mixedAudio = await audioProcessor.mixTracks(augmentedVocal, instrumentalBuffer, this.env);
@@ -104,6 +92,41 @@ class QueueService {
 
             throw error; // Re-throw to allow Cloudflare Queue to handle retries
         }
+    }
+
+    /**
+     * Creates a WAV file header
+     */
+    createWavHeader(numSamples, sampleRate = 44100) {
+        const numChannels = 1; // mono
+        const bitsPerSample = 16;
+        const byteRate = sampleRate * numChannels * bitsPerSample / 8;
+        const blockAlign = numChannels * bitsPerSample / 8;
+        const dataSize = numSamples * blockAlign;
+
+        const buffer = new ArrayBuffer(44);
+        const view = new DataView(buffer);
+
+        // "RIFF" chunk descriptor
+        view.setUint32(0, 0x52494646, false); // "RIFF"
+        view.setUint32(4, 36 + dataSize, true); // file size - 8
+        view.setUint32(8, 0x57415645, false); // "WAVE"
+
+        // "fmt " sub-chunk
+        view.setUint32(12, 0x666d7420, false); // "fmt "
+        view.setUint32(16, 16, true); // fmt chunk size
+        view.setUint16(20, 1, true); // audio format (1 = PCM)
+        view.setUint16(22, numChannels, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, byteRate, true);
+        view.setUint16(32, blockAlign, true);
+        view.setUint16(34, bitsPerSample, true);
+
+        // "data" sub-chunk
+        view.setUint32(36, 0x64617461, false); // "data"
+        view.setUint32(40, dataSize, true);
+
+        return new Uint8Array(buffer);
     }
 }
 

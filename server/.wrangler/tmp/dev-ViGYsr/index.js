@@ -28,7 +28,7 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   mod
 ));
 
-// .wrangler/tmp/bundle-j42CDS/checked-fetch.js
+// .wrangler/tmp/bundle-oqTlZj/checked-fetch.js
 function checkURL(request, init) {
   const url = request instanceof URL ? request : new URL(
     (typeof request === "string" ? new Request(request, init) : request).url
@@ -46,7 +46,7 @@ function checkURL(request, init) {
 }
 var urls;
 var init_checked_fetch = __esm({
-  ".wrangler/tmp/bundle-j42CDS/checked-fetch.js"() {
+  ".wrangler/tmp/bundle-oqTlZj/checked-fetch.js"() {
     urls = /* @__PURE__ */ new Set();
     __name(checkURL, "checkURL");
     globalThis.fetch = new Proxy(globalThis.fetch, {
@@ -1392,11 +1392,11 @@ var require_MusicTempo = __commonJS({
   }
 });
 
-// .wrangler/tmp/bundle-j42CDS/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-oqTlZj/middleware-loader.entry.ts
 init_checked_fetch();
 init_modules_watch_stub();
 
-// .wrangler/tmp/bundle-j42CDS/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-oqTlZj/middleware-insertion-facade.js
 init_checked_fetch();
 init_modules_watch_stub();
 
@@ -4104,13 +4104,13 @@ var AudioProcessor = class {
   /**
    * Mixes vocal and instrumental buffers using Cloudinary
    */
-  async mixTracks(vocalBuffer, instrumentalBuffer2, env) {
+  async mixTracks(vocalBuffer, instrumentalBuffer, env) {
     const cloudName = env.ASSET_MANAGER_ID;
     const apiKey = env.ASSET_MANAGER_KEY;
     const apiSecret = env.ASSET_MANAGER_SECRET;
     console.log(`Mixing via Cloudinary...`);
     try {
-      const instUpload = await this.uploadToCloudinary(instrumentalBuffer2, "inst", env);
+      const instUpload = await this.uploadToCloudinary(instrumentalBuffer, "inst", env);
       const instId = instUpload.public_id;
       const vocalUpload = await this.uploadToCloudinary(vocalBuffer, "vocal", env);
       const vocalId = vocalUpload.public_id.replace(/\//g, ":");
@@ -4187,11 +4187,14 @@ var QueueService = class {
       const augmentedVocal = await vocalEnhancement_default.enhance(vocalBuffer, this.env);
       const analysis = await audioAnalysis_default.analyze(vocalBuffer);
       const finalBpm = bpm || analysis.bpm;
-      console.log(`Generating music with ElevenLabs (tier: ${tier})`);
-      instrumentalBuffer = await elevenLabsApi_default.generateMusic({
-        prompt: `melodic ${genre} instrumental, key of ${analysis.key}, ${finalBpm} BPM`,
-        duration: analysis.duration
-      }, this.env);
+      console.log(`[TEMP] Generating silent instrumental track (${analysis.duration}s)`);
+      const sampleRate = 44100;
+      const numSamples = Math.floor(analysis.duration * sampleRate);
+      const wavHeader = this.createWavHeader(numSamples, sampleRate);
+      const silentSamples = new Uint8Array(numSamples * 2);
+      const instrumentalBuffer = new Uint8Array(wavHeader.length + silentSamples.length);
+      instrumentalBuffer.set(wavHeader, 0);
+      instrumentalBuffer.set(silentSamples, wavHeader.length);
       const mixedAudio = await audioProcessor_default.mixTracks(augmentedVocal, instrumentalBuffer, this.env);
       const mixKey = `output/${projectId}.mp3`;
       await this.storage.uploadFile(mixedAudio, mixKey, "audio/mpeg");
@@ -4219,6 +4222,32 @@ var QueueService = class {
       await this.env.DB.prepare("UPDATE projects SET status = ? WHERE id = ?").bind("failed", projectId).run();
       throw error;
     }
+  }
+  /**
+   * Creates a WAV file header
+   */
+  createWavHeader(numSamples, sampleRate = 44100) {
+    const numChannels = 1;
+    const bitsPerSample = 16;
+    const byteRate = sampleRate * numChannels * bitsPerSample / 8;
+    const blockAlign = numChannels * bitsPerSample / 8;
+    const dataSize = numSamples * blockAlign;
+    const buffer = new ArrayBuffer(44);
+    const view = new DataView(buffer);
+    view.setUint32(0, 1380533830, false);
+    view.setUint32(4, 36 + dataSize, true);
+    view.setUint32(8, 1463899717, false);
+    view.setUint32(12, 1718449184, false);
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, numChannels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, byteRate, true);
+    view.setUint16(32, blockAlign, true);
+    view.setUint16(34, bitsPerSample, true);
+    view.setUint32(36, 1684108385, false);
+    view.setUint32(40, dataSize, true);
+    return new Uint8Array(buffer);
   }
 };
 __name(QueueService, "QueueService");
@@ -4522,7 +4551,7 @@ var drainBody = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
 }, "drainBody");
 var middleware_ensure_req_body_drained_default = drainBody;
 
-// .wrangler/tmp/bundle-j42CDS/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-oqTlZj/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default
 ];
@@ -4555,7 +4584,7 @@ function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// .wrangler/tmp/bundle-j42CDS/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-oqTlZj/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;

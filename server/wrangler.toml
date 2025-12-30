@@ -4,7 +4,7 @@ compatibility_date = "2024-03-01"
 compatibility_flags = ["nodejs_compat"]
 
 [vars]
-PRODUCTION_AI_KEY_1 = "sk_8cfc91468d29027cbb840b7a9c2767dbb216054f67eebb7b" # ElevenLabs
+PRODUCTION_AI_KEY_1 = "sk_ce1af3795680175e344b39e5d886753121c68da659376e8e" # ElevenLabs (NEW KEY)
 PRODUCTION_AI_KEY_2 = "sk-W21BfqtLfCSVudT4GMgStULJ7KpXiUyruOHTVsfGfg5c63pA" # Stability AI
 ASSET_MANAGER_ID = "di4onz3fo"    # Cloudinary Cloud Name
 ASSET_MANAGER_KEY = "441864163865968"   # Cloudinary API Key
