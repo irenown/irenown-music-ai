@@ -15,22 +15,24 @@ class StabilityService {
         const fullPrompt = `${prompt}, ${bpm} BPM, studio quality, professional instrumental, no vocals`;
         console.log(`Requesting music generation from Stability AI: "${fullPrompt}"`);
 
-        const formData = new FormData();
-        formData.append('prompt', fullPrompt);
-        formData.append('seconds_total', Math.min(duration, 45).toString());
-
-        const response = await fetch('https://api.stability.ai/v2beta/stable-audio/generate', {
+        const response = await fetch('https://api.stability.ai/v2/generate/audio', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${apiKey}`,
-                'Accept': 'audio/wav',
+                'Content-Type': 'application/json',
+                'Accept': 'audio/mpeg'
             },
-            body: formData
+            body: JSON.stringify({
+                model: 'stable-audio',
+                prompt: fullPrompt,
+                seconds_total: Math.min(duration, 47),
+                steps: 100
+            })
         });
 
         if (!response.ok) {
             const error = await response.text();
-            throw new Error(`Stability AI generation failed: ${error}`);
+            throw new Error(`Stability AI generation failed: ${response.status} ${error}`);
         }
 
         return await response.arrayBuffer();
