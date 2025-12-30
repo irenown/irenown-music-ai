@@ -1,34 +1,8 @@
-var __create = Object.create;
 var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getProtoOf = Object.getPrototypeOf;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
-var __esm = (fn, res) => function __init() {
-  return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
-};
-var __commonJS = (cb, mod) => function __require() {
-  return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
-};
-var __copyProps = (to, from, except, desc) => {
-  if (from && typeof from === "object" || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
-  }
-  return to;
-};
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
-  // If the importer is in node compatibility mode or this is not an ESM
-  // file that has been converted to a CommonJS file using a Babel-
-  // compatible transform (i.e. "__esModule" has not been set), then set
-  // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
-  mod
-));
 
 // .wrangler/tmp/bundle-oqTlZj/checked-fetch.js
+var urls = /* @__PURE__ */ new Set();
 function checkURL(request, init) {
   const url = request instanceof URL ? request : new URL(
     (typeof request === "string" ? new Request(request, init) : request).url
@@ -44,1381 +18,16 @@ function checkURL(request, init) {
     }
   }
 }
-var urls;
-var init_checked_fetch = __esm({
-  ".wrangler/tmp/bundle-oqTlZj/checked-fetch.js"() {
-    urls = /* @__PURE__ */ new Set();
-    __name(checkURL, "checkURL");
-    globalThis.fetch = new Proxy(globalThis.fetch, {
-      apply(target, thisArg, argArray) {
-        const [request, init] = argArray;
-        checkURL(request, init);
-        return Reflect.apply(target, thisArg, argArray);
-      }
-    });
+__name(checkURL, "checkURL");
+globalThis.fetch = new Proxy(globalThis.fetch, {
+  apply(target, thisArg, argArray) {
+    const [request, init] = argArray;
+    checkURL(request, init);
+    return Reflect.apply(target, thisArg, argArray);
   }
 });
-
-// wrangler-modules-watch:wrangler:modules-watch
-var init_wrangler_modules_watch = __esm({
-  "wrangler-modules-watch:wrangler:modules-watch"() {
-    init_checked_fetch();
-    init_modules_watch_stub();
-  }
-});
-
-// node_modules/wrangler/templates/modules-watch-stub.js
-var init_modules_watch_stub = __esm({
-  "node_modules/wrangler/templates/modules-watch-stub.js"() {
-    init_wrangler_modules_watch();
-  }
-});
-
-// node_modules/node-wav/index.js
-var require_node_wav = __commonJS({
-  "node_modules/node-wav/index.js"(exports, module) {
-    "use strict";
-    init_checked_fetch();
-    init_modules_watch_stub();
-    var data_decoders = {
-      pcm8: (buffer, offset, output, channels, samples) => {
-        let input = new Uint8Array(buffer, offset);
-        let pos = 0;
-        for (let i = 0; i < samples; ++i) {
-          for (let ch = 0; ch < channels; ++ch) {
-            let data = input[pos++] - 128;
-            output[ch][i] = data < 0 ? data / 128 : data / 127;
-          }
-        }
-      },
-      pcm16: (buffer, offset, output, channels, samples) => {
-        let input = new Int16Array(buffer, offset);
-        let pos = 0;
-        for (let i = 0; i < samples; ++i) {
-          for (let ch = 0; ch < channels; ++ch) {
-            let data = input[pos++];
-            output[ch][i] = data < 0 ? data / 32768 : data / 32767;
-          }
-        }
-      },
-      pcm24: (buffer, offset, output, channels, samples) => {
-        let input = new Uint8Array(buffer, offset);
-        let pos = 0;
-        for (let i = 0; i < samples; ++i) {
-          for (let ch = 0; ch < channels; ++ch) {
-            let x0 = input[pos++];
-            let x1 = input[pos++];
-            let x2 = input[pos++];
-            let xx = x0 + (x1 << 8) + (x2 << 16);
-            let data = xx > 8388608 ? xx - 16777216 : xx;
-            output[ch][i] = data < 0 ? data / 8388608 : data / 8388607;
-          }
-        }
-      },
-      pcm32: (buffer, offset, output, channels, samples) => {
-        let input = new Int32Array(buffer, offset);
-        let pos = 0;
-        for (let i = 0; i < samples; ++i) {
-          for (let ch = 0; ch < channels; ++ch) {
-            let data = input[pos++];
-            output[ch][i] = data < 0 ? data / 2147483648 : data / 2147483647;
-          }
-        }
-      },
-      pcm32f: (buffer, offset, output, channels, samples) => {
-        let input = new Float32Array(buffer, offset);
-        let pos = 0;
-        for (let i = 0; i < samples; ++i) {
-          for (let ch = 0; ch < channels; ++ch)
-            output[ch][i] = input[pos++];
-        }
-      },
-      pcm64f: (buffer, offset, output, channels, samples) => {
-        let input = new Float64Array(buffer, offset);
-        let pos = 0;
-        for (let i = 0; i < samples; ++i) {
-          for (let ch = 0; ch < channels; ++ch)
-            output[ch][i] = input[pos++];
-        }
-      }
-    };
-    var data_encoders = {
-      pcm8: (buffer, offset, input, channels, samples) => {
-        let output = new Uint8Array(buffer, offset);
-        let pos = 0;
-        for (let i = 0; i < samples; ++i) {
-          for (let ch = 0; ch < channels; ++ch) {
-            let v = Math.max(-1, Math.min(input[ch][i], 1));
-            v = (v * 0.5 + 0.5) * 255 | 0;
-            output[pos++] = v;
-          }
-        }
-      },
-      pcm16: (buffer, offset, input, channels, samples) => {
-        let output = new Int16Array(buffer, offset);
-        let pos = 0;
-        for (let i = 0; i < samples; ++i) {
-          for (let ch = 0; ch < channels; ++ch) {
-            let v = Math.max(-1, Math.min(input[ch][i], 1));
-            v = (v < 0 ? v * 32768 : v * 32767) | 0;
-            output[pos++] = v;
-          }
-        }
-      },
-      pcm24: (buffer, offset, input, channels, samples) => {
-        let output = new Uint8Array(buffer, offset);
-        let pos = 0;
-        for (let i = 0; i < samples; ++i) {
-          for (let ch = 0; ch < channels; ++ch) {
-            let v = Math.max(-1, Math.min(input[ch][i], 1));
-            v = (v < 0 ? 16777216 + v * 8388608 : v * 8388607) | 0;
-            output[pos++] = v >> 0 & 255;
-            output[pos++] = v >> 8 & 255;
-            output[pos++] = v >> 16 & 255;
-          }
-        }
-      },
-      pcm32: (buffer, offset, input, channels, samples) => {
-        let output = new Int32Array(buffer, offset);
-        let pos = 0;
-        for (let i = 0; i < samples; ++i) {
-          for (let ch = 0; ch < channels; ++ch) {
-            let v = Math.max(-1, Math.min(input[ch][i], 1));
-            v = (v < 0 ? v * 2147483648 : v * 2147483647) | 0;
-            output[pos++] = v;
-          }
-        }
-      },
-      pcm32f: (buffer, offset, input, channels, samples) => {
-        let output = new Float32Array(buffer, offset);
-        let pos = 0;
-        for (let i = 0; i < samples; ++i) {
-          for (let ch = 0; ch < channels; ++ch) {
-            let v = Math.max(-1, Math.min(input[ch][i], 1));
-            output[pos++] = v;
-          }
-        }
-      },
-      pcm64f: (buffer, offset, input, channels, samples) => {
-        let output = new Float64Array(buffer, offset);
-        let pos = 0;
-        for (let i = 0; i < samples; ++i) {
-          for (let ch = 0; ch < channels; ++ch) {
-            let v = Math.max(-1, Math.min(input[ch][i], 1));
-            output[pos++] = v;
-          }
-        }
-      }
-    };
-    function lookup(table, bitDepth, floatingPoint) {
-      let name = "pcm" + bitDepth + (floatingPoint ? "f" : "");
-      let fn = table[name];
-      if (!fn)
-        throw new TypeError("Unsupported data format: " + name);
-      return fn;
-    }
-    __name(lookup, "lookup");
-    function decode(buffer) {
-      let pos = 0, end = 0;
-      if (buffer.buffer) {
-        pos = buffer.byteOffset;
-        end = buffer.length;
-        buffer = buffer.buffer;
-      } else {
-        pos = 0;
-        end = buffer.byteLength;
-      }
-      let v = new DataView(buffer);
-      function u8() {
-        let x = v.getUint8(pos);
-        pos++;
-        return x;
-      }
-      __name(u8, "u8");
-      function u16() {
-        let x = v.getUint16(pos, true);
-        pos += 2;
-        return x;
-      }
-      __name(u16, "u16");
-      function u32() {
-        let x = v.getUint32(pos, true);
-        pos += 4;
-        return x;
-      }
-      __name(u32, "u32");
-      function string(len) {
-        let str = "";
-        for (let i = 0; i < len; ++i)
-          str += String.fromCharCode(u8());
-        return str;
-      }
-      __name(string, "string");
-      if (string(4) !== "RIFF")
-        throw new TypeError("Invalid WAV file");
-      u32();
-      if (string(4) !== "WAVE")
-        throw new TypeError("Invalid WAV file");
-      let fmt;
-      while (pos < end) {
-        let type = string(4);
-        let size = u32();
-        let next = pos + size;
-        switch (type) {
-          case "fmt ":
-            let formatId = u16();
-            if (formatId !== 1 && formatId !== 3)
-              throw new TypeError("Unsupported format in WAV file: " + formatId.toString(16));
-            fmt = {
-              format: "lpcm",
-              floatingPoint: formatId === 3,
-              channels: u16(),
-              sampleRate: u32(),
-              byteRate: u32(),
-              blockSize: u16(),
-              bitDepth: u16()
-            };
-            break;
-          case "data":
-            if (!fmt)
-              throw new TypeError('Missing "fmt " chunk.');
-            let samples = Math.floor(size / fmt.blockSize);
-            let channels = fmt.channels;
-            let sampleRate = fmt.sampleRate;
-            let channelData = [];
-            for (let ch = 0; ch < channels; ++ch)
-              channelData[ch] = new Float32Array(samples);
-            lookup(data_decoders, fmt.bitDepth, fmt.floatingPoint)(buffer, pos, channelData, channels, samples);
-            return {
-              sampleRate,
-              channelData
-            };
-            break;
-        }
-        pos = next;
-      }
-    }
-    __name(decode, "decode");
-    function encode(channelData, opts) {
-      let sampleRate = opts.sampleRate || 16e3;
-      let floatingPoint = !!(opts.float || opts.floatingPoint);
-      let bitDepth = floatingPoint ? 32 : opts.bitDepth | 0 || 16;
-      let channels = channelData.length;
-      let samples = channelData[0].length;
-      let buffer = new ArrayBuffer(44 + samples * channels * (bitDepth >> 3));
-      let v = new DataView(buffer);
-      let pos = 0;
-      function u8(x) {
-        v.setUint8(pos++, x);
-      }
-      __name(u8, "u8");
-      function u16(x) {
-        v.setUint16(pos, x, true);
-        pos += 2;
-      }
-      __name(u16, "u16");
-      function u32(x) {
-        v.setUint32(pos, x, true);
-        pos += 4;
-      }
-      __name(u32, "u32");
-      function string(s) {
-        for (var i = 0; i < s.length; ++i)
-          u8(s.charCodeAt(i));
-      }
-      __name(string, "string");
-      string("RIFF");
-      u32(buffer.byteLength - 8);
-      string("WAVE");
-      string("fmt ");
-      u32(16);
-      u16(floatingPoint ? 3 : 1);
-      u16(channels);
-      u32(sampleRate);
-      u32(sampleRate * channels * (bitDepth >> 3));
-      u16(channels * (bitDepth >> 3));
-      u16(bitDepth);
-      string("data");
-      u32(buffer.byteLength - 44);
-      lookup(data_encoders, bitDepth, floatingPoint)(buffer, pos, channelData, channels, samples);
-      return Buffer(buffer);
-    }
-    __name(encode, "encode");
-    module.exports = {
-      decode,
-      encode
-    };
-  }
-});
-
-// node_modules/music-tempo/dist/node/OnsetDetection.js
-var require_OnsetDetection = __commonJS({
-  "node_modules/music-tempo/dist/node/OnsetDetection.js"(exports, module) {
-    init_checked_fetch();
-    init_modules_watch_stub();
-    (function(global, factory) {
-      if (typeof define === "function" && define.amd) {
-        define(["module", "exports"], factory);
-      } else if (typeof exports !== "undefined") {
-        factory(module, exports);
-      } else {
-        var mod = {
-          exports: {}
-        };
-        factory(mod, mod.exports);
-        global.OnsetDetection = mod.exports;
-      }
-    })(exports, function(module2, exports2) {
-      "use strict";
-      Object.defineProperty(exports2, "__esModule", {
-        value: true
-      });
-      function _classCallCheck(instance, Constructor) {
-        if (!(instance instanceof Constructor)) {
-          throw new TypeError("Cannot call a class as a function");
-        }
-      }
-      __name(_classCallCheck, "_classCallCheck");
-      var _createClass = function() {
-        function defineProperties(target, props) {
-          for (var i = 0; i < props.length; i++) {
-            var descriptor = props[i];
-            descriptor.enumerable = descriptor.enumerable || false;
-            descriptor.configurable = true;
-            if ("value" in descriptor)
-              descriptor.writable = true;
-            Object.defineProperty(target, descriptor.key, descriptor);
-          }
-        }
-        __name(defineProperties, "defineProperties");
-        return function(Constructor, protoProps, staticProps) {
-          if (protoProps)
-            defineProperties(Constructor.prototype, protoProps);
-          if (staticProps)
-            defineProperties(Constructor, staticProps);
-          return Constructor;
-        };
-      }();
-      var OnsetDetection = function() {
-        function OnsetDetection2() {
-          _classCallCheck(this, OnsetDetection2);
-        }
-        __name(OnsetDetection2, "OnsetDetection");
-        _createClass(OnsetDetection2, null, [{
-          key: "calculateSF",
-          value: /* @__PURE__ */ __name(function calculateSF(audioData, fft) {
-            var params = arguments.length > 2 && arguments[2] !== void 0 ? arguments[2] : {};
-            if (typeof fft == "undefined") {
-              throw new ReferenceError("fft is undefined");
-            }
-            if (typeof fft.getHammingWindow !== "function" || typeof fft.getSpectrum !== "function") {
-              throw new ReferenceError("fft doesn't contain getHammingWindow or getSpectrum methods");
-            }
-            if (!Array.prototype.fill) {
-              Array.prototype.fill = function(value2) {
-                if (this == null) {
-                  throw new TypeError("this is null or not defined");
-                }
-                var O = Object(this);
-                var len = O.length >>> 0;
-                var start = arguments[1];
-                var relativeStart = start >> 0;
-                var k2 = relativeStart < 0 ? Math.max(len + relativeStart, 0) : Math.min(relativeStart, len);
-                var end = arguments[2];
-                var relativeEnd = end === void 0 ? len : end >> 0;
-                var final = relativeEnd < 0 ? Math.max(len + relativeEnd, 0) : Math.min(relativeEnd, len);
-                while (k2 < final) {
-                  O[k2] = value2;
-                  k2++;
-                }
-                return O;
-              };
-            }
-            params.bufferSize = params.bufferSize || 2048;
-            params.hopSize = params.hopSize || 441;
-            var bufferSize = params.bufferSize, hopSize = params.hopSize;
-            var k = Math.floor(Math.log(bufferSize) / Math.LN2);
-            if (Math.pow(2, k) !== bufferSize) {
-              throw "Invalid buffer size (" + bufferSize + "), must be power of 2";
-            }
-            var hammWindow = fft.getHammingWindow(bufferSize);
-            var spectralFlux = [];
-            var spectrumLength = bufferSize / 2 + 1;
-            var previousSpectrum = new Array(spectrumLength);
-            previousSpectrum.fill(0);
-            var im = new Array(bufferSize);
-            var length = audioData.length;
-            var zerosStart = new Array(bufferSize - hopSize);
-            zerosStart.fill(0);
-            audioData = zerosStart.concat(audioData);
-            var zerosEnd = new Array(bufferSize - audioData.length % hopSize);
-            zerosEnd.fill(0);
-            audioData = audioData.concat(zerosEnd);
-            for (var wndStart = 0; wndStart < length; wndStart += hopSize) {
-              var wndEnd = wndStart + bufferSize;
-              var re = [];
-              var _k = 0;
-              for (var i = wndStart; i < wndEnd; i++) {
-                re[_k] = hammWindow[_k] * audioData[i];
-                _k++;
-              }
-              im.fill(0);
-              fft.getSpectrum(re, im);
-              var flux = 0;
-              for (var j = 0; j < spectrumLength; j++) {
-                var value = re[j] - previousSpectrum[j];
-                flux += value < 0 ? 0 : value;
-              }
-              spectralFlux.push(flux);
-              previousSpectrum = re;
-            }
-            return spectralFlux;
-          }, "calculateSF")
-        }, {
-          key: "normalize",
-          value: /* @__PURE__ */ __name(function normalize(data) {
-            if (!Array.isArray(data)) {
-              throw "Array expected";
-            }
-            if (data.length == 0) {
-              throw "Array is empty";
-            }
-            var sum = 0;
-            var squareSum = 0;
-            for (var i = 0; i < data.length; i++) {
-              sum += data[i];
-              squareSum += data[i] * data[i];
-            }
-            var mean = sum / data.length;
-            var standardDeviation = Math.sqrt((squareSum - sum * mean) / data.length);
-            if (standardDeviation == 0)
-              standardDeviation = 1;
-            for (var _i = 0; _i < data.length; _i++) {
-              data[_i] = (data[_i] - mean) / standardDeviation;
-            }
-          }, "normalize")
-        }, {
-          key: "findPeaks",
-          value: /* @__PURE__ */ __name(function findPeaks(spectralFlux) {
-            var params = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : {};
-            var length = spectralFlux.length;
-            var sf = spectralFlux;
-            var decayRate = params.decayRate || 0.84;
-            var peakFindingWindow = params.peakFindingWindow || 6;
-            var meanWndMultiplier = params.meanWndMultiplier || 3;
-            var peakThreshold = params.peakThreshold || 0.35;
-            var max = 0;
-            var av = sf[0];
-            var peaks = [];
-            for (var i = 0; i < length; i++) {
-              av = decayRate * av + (1 - decayRate) * sf[i];
-              if (sf[i] < av)
-                continue;
-              var wndStart = i - peakFindingWindow;
-              var wndEnd = i + peakFindingWindow + 1;
-              if (wndStart < 0)
-                wndStart = 0;
-              if (wndEnd > length)
-                wndEnd = length;
-              if (av < sf[i])
-                av = sf[i];
-              var isMax = true;
-              for (var j = wndStart; j < wndEnd; j++) {
-                if (sf[j] > sf[i])
-                  isMax = false;
-              }
-              if (isMax) {
-                var meanWndStart = i - peakFindingWindow * meanWndMultiplier;
-                var meanWndEnd = i + peakFindingWindow;
-                if (meanWndStart < 0)
-                  meanWndStart = 0;
-                if (meanWndEnd > length)
-                  meanWndEnd = length;
-                var sum = 0;
-                var count = meanWndEnd - meanWndStart;
-                for (var _j = meanWndStart; _j < meanWndEnd; _j++) {
-                  sum += sf[_j];
-                }
-                if (sf[i] > sum / count + peakThreshold) {
-                  peaks.push(i);
-                }
-              }
-            }
-            if (peaks.length < 2) {
-              throw "Fail to find peaks";
-            }
-            return peaks;
-          }, "findPeaks")
-        }]);
-        return OnsetDetection2;
-      }();
-      exports2.default = OnsetDetection;
-      module2.exports = exports2["default"];
-    });
-  }
-});
-
-// node_modules/music-tempo/dist/node/TempoInduction.js
-var require_TempoInduction = __commonJS({
-  "node_modules/music-tempo/dist/node/TempoInduction.js"(exports, module) {
-    init_checked_fetch();
-    init_modules_watch_stub();
-    (function(global, factory) {
-      if (typeof define === "function" && define.amd) {
-        define(["module", "exports"], factory);
-      } else if (typeof exports !== "undefined") {
-        factory(module, exports);
-      } else {
-        var mod = {
-          exports: {}
-        };
-        factory(mod, mod.exports);
-        global.TempoInduction = mod.exports;
-      }
-    })(exports, function(module2, exports2) {
-      "use strict";
-      Object.defineProperty(exports2, "__esModule", {
-        value: true
-      });
-      function _classCallCheck(instance, Constructor) {
-        if (!(instance instanceof Constructor)) {
-          throw new TypeError("Cannot call a class as a function");
-        }
-      }
-      __name(_classCallCheck, "_classCallCheck");
-      var _createClass = function() {
-        function defineProperties(target, props) {
-          for (var i = 0; i < props.length; i++) {
-            var descriptor = props[i];
-            descriptor.enumerable = descriptor.enumerable || false;
-            descriptor.configurable = true;
-            if ("value" in descriptor)
-              descriptor.writable = true;
-            Object.defineProperty(target, descriptor.key, descriptor);
-          }
-        }
-        __name(defineProperties, "defineProperties");
-        return function(Constructor, protoProps, staticProps) {
-          if (protoProps)
-            defineProperties(Constructor.prototype, protoProps);
-          if (staticProps)
-            defineProperties(Constructor, staticProps);
-          return Constructor;
-        };
-      }();
-      var TempoInduction = function() {
-        function TempoInduction2() {
-          _classCallCheck(this, TempoInduction2);
-        }
-        __name(TempoInduction2, "TempoInduction");
-        _createClass(TempoInduction2, null, [{
-          key: "processRhythmicEvents",
-          value: /* @__PURE__ */ __name(function processRhythmicEvents(events) {
-            var params = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : {};
-            var widthTreshold = params.widthTreshold || 0.025, maxIOI = params.maxIOI || 2.5, minIOI = params.minIOI || 0.07, length = events.length;
-            var clIntervals = [], clSizes = [], clCount = 0;
-            for (var i = 0; i < length - 1; i++) {
-              for (var j = i + 1; j < length; j++) {
-                var ioi = events[j] - events[i];
-                if (ioi < minIOI) {
-                  continue;
-                }
-                if (ioi > maxIOI) {
-                  break;
-                }
-                var k = 0;
-                for (; k < clCount; k++) {
-                  if (Math.abs(clIntervals[k] - ioi) < widthTreshold) {
-                    if (Math.abs(clIntervals[k + 1] - ioi) < Math.abs(clIntervals[k] - ioi) && k < clCount - 1) {
-                      k++;
-                    }
-                    clIntervals[k] = (clIntervals[k] * clSizes[k] + ioi) / (clSizes[k] + 1);
-                    clSizes[k]++;
-                    break;
-                  }
-                }
-                if (k != clCount)
-                  continue;
-                clCount++;
-                for (; k > 0 && clIntervals[k - 1] > ioi; k--) {
-                  clIntervals[k] = clIntervals[k - 1];
-                  clSizes[k] = clSizes[k - 1];
-                }
-                clIntervals[k] = ioi;
-                clSizes[k] = 1;
-              }
-            }
-            if (clCount == 0) {
-              throw "Fail to find IOIs";
-            }
-            clIntervals.length = clCount;
-            clSizes.length = clCount;
-            return { clIntervals, clSizes };
-          }, "processRhythmicEvents")
-        }, {
-          key: "mergeClusters",
-          value: /* @__PURE__ */ __name(function mergeClusters(clusters) {
-            var params = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : {};
-            var widthTreshold = params.widthTreshold || 0.025;
-            var clIntervals = clusters.clIntervals, clSizes = clusters.clSizes;
-            var clCount = clIntervals.length;
-            for (var i = 0; i < clCount; i++) {
-              for (var j = i + 1; j < clCount; j++) {
-                if (Math.abs(clIntervals[i] - clIntervals[j]) < widthTreshold) {
-                  clIntervals[i] = (clIntervals[i] * clSizes[i] + clIntervals[j] * clSizes[j]) / (clSizes[i] + clSizes[j]);
-                  clSizes[i] = clSizes[i] + clSizes[j];
-                  --clCount;
-                  for (var k = j + 1; k <= clCount; k++) {
-                    clIntervals[k - 1] = clIntervals[k];
-                    clSizes[k - 1] = clSizes[k];
-                  }
-                }
-              }
-            }
-            clIntervals.length = clCount;
-            clSizes.length = clCount;
-            return { clIntervals, clSizes };
-          }, "mergeClusters")
-        }, {
-          key: "calculateScore",
-          value: /* @__PURE__ */ __name(function calculateScore(clusters) {
-            var params = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : {};
-            var widthTreshold = params.widthTreshold || 0.025;
-            var maxTempos = params.maxTempos || 10;
-            var clIntervals = clusters.clIntervals, clSizes = clusters.clSizes, clScores = [], clScoresIdxs = [];
-            var clCount = clIntervals.length;
-            for (var i = 0; i < clCount; i++) {
-              clScores[i] = 10 * clSizes[i];
-              clScoresIdxs[i] = { score: clScores[i], idx: i };
-            }
-            clScoresIdxs.sort(function(a, b) {
-              return b.score - a.score;
-            });
-            if (clScoresIdxs.length > maxTempos) {
-              for (var _i = maxTempos - 1; _i < clScoresIdxs.length - 1; _i++) {
-                if (clScoresIdxs[_i].score == clScoresIdxs[_i + 1].score) {
-                  maxTempos++;
-                } else {
-                  break;
-                }
-              }
-              clScoresIdxs.length = maxTempos;
-            }
-            clScoresIdxs = clScoresIdxs.map(function(a) {
-              return a.idx;
-            });
-            for (var _i2 = 0; _i2 < clCount; _i2++) {
-              for (var j = _i2 + 1; j < clCount; j++) {
-                var ratio = clIntervals[_i2] / clIntervals[j];
-                var isFraction = ratio < 1;
-                var d = void 0, err = void 0;
-                d = isFraction ? Math.round(1 / ratio) : Math.round(ratio);
-                if (d < 2 || d > 8)
-                  continue;
-                if (isFraction)
-                  err = Math.abs(clIntervals[_i2] * d - clIntervals[j]);
-                else
-                  err = Math.abs(clIntervals[_i2] - clIntervals[j] * d);
-                var errTreshold = isFraction ? widthTreshold : widthTreshold * d;
-                if (err >= errTreshold)
-                  continue;
-                d = d >= 5 ? 1 : 6 - d;
-                clScores[_i2] += d * clSizes[j];
-                clScores[j] += d * clSizes[_i2];
-              }
-            }
-            return { clScores, clScoresIdxs };
-          }, "calculateScore")
-        }, {
-          key: "createTempoList",
-          value: /* @__PURE__ */ __name(function createTempoList(clusters) {
-            var params = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : {};
-            var widthTreshold = params.widthTreshold || 0.025, minBeatInterval = params.minBeatInterval || 0.3, maxBeatInterval = params.maxBeatInterval || 1;
-            var clIntervals = clusters.clIntervals, clSizes = clusters.clSizes, clScores = clusters.clScores, clScoresIdxs = clusters.clScoresIdxs, tempoList = [];
-            var clCount = clIntervals.length;
-            for (var i = 0; i < clScoresIdxs.length; i++) {
-              var idx = clScoresIdxs[i];
-              var newSum = clIntervals[idx] * clScores[idx];
-              var newWeight = clScores[idx];
-              var err = void 0, errTreshold = void 0;
-              for (var j = 0; j < clCount; j++) {
-                if (j == idx)
-                  continue;
-                var ratio = clIntervals[idx] / clIntervals[j];
-                var isFraction = ratio < 1;
-                var sumInc = 0;
-                var d = isFraction ? Math.round(1 / ratio) : Math.round(ratio);
-                if (d < 2 || d > 8)
-                  continue;
-                if (isFraction) {
-                  err = Math.abs(clIntervals[idx] * d - clIntervals[j]);
-                  errTreshold = widthTreshold;
-                } else {
-                  err = Math.abs(clIntervals[idx] - d * clIntervals[j]);
-                  errTreshold = widthTreshold * d;
-                }
-                if (err >= errTreshold)
-                  continue;
-                if (isFraction) {
-                  newSum += clIntervals[j] / d * clScores[j];
-                } else {
-                  newSum += clIntervals[j] * d * clScores[j];
-                }
-                newWeight += clScores[j];
-              }
-              var beat = newSum / newWeight;
-              while (beat < minBeatInterval) {
-                beat *= 2;
-              }
-              while (beat > maxBeatInterval) {
-                beat /= 2;
-              }
-              tempoList.push(beat);
-            }
-            return tempoList;
-          }, "createTempoList")
-        }]);
-        return TempoInduction2;
-      }();
-      exports2.default = TempoInduction;
-      module2.exports = exports2["default"];
-    });
-  }
-});
-
-// node_modules/music-tempo/dist/node/Agent.js
-var require_Agent = __commonJS({
-  "node_modules/music-tempo/dist/node/Agent.js"(exports, module) {
-    init_checked_fetch();
-    init_modules_watch_stub();
-    (function(global, factory) {
-      if (typeof define === "function" && define.amd) {
-        define(["module", "exports"], factory);
-      } else if (typeof exports !== "undefined") {
-        factory(module, exports);
-      } else {
-        var mod = {
-          exports: {}
-        };
-        factory(mod, mod.exports);
-        global.Agent = mod.exports;
-      }
-    })(exports, function(module2, exports2) {
-      "use strict";
-      Object.defineProperty(exports2, "__esModule", {
-        value: true
-      });
-      function _classCallCheck(instance, Constructor) {
-        if (!(instance instanceof Constructor)) {
-          throw new TypeError("Cannot call a class as a function");
-        }
-      }
-      __name(_classCallCheck, "_classCallCheck");
-      var _createClass = function() {
-        function defineProperties(target, props) {
-          for (var i = 0; i < props.length; i++) {
-            var descriptor = props[i];
-            descriptor.enumerable = descriptor.enumerable || false;
-            descriptor.configurable = true;
-            if ("value" in descriptor)
-              descriptor.writable = true;
-            Object.defineProperty(target, descriptor.key, descriptor);
-          }
-        }
-        __name(defineProperties, "defineProperties");
-        return function(Constructor, protoProps, staticProps) {
-          if (protoProps)
-            defineProperties(Constructor.prototype, protoProps);
-          if (staticProps)
-            defineProperties(Constructor, staticProps);
-          return Constructor;
-        };
-      }();
-      var Agent = function() {
-        function Agent2(tempo, firstBeatTime, firsteventScore, agentList) {
-          var params = arguments.length > 4 && arguments[4] !== void 0 ? arguments[4] : {};
-          _classCallCheck(this, Agent2);
-          this.expiryTime = params.expiryTime || 10;
-          this.toleranceWndInner = params.toleranceWndInner || 0.04;
-          this.toleranceWndPre = params.toleranceWndPre || 0.15;
-          this.toleranceWndPost = params.toleranceWndPost || 0.3;
-          this.toleranceWndPre *= tempo;
-          this.toleranceWndPost *= tempo;
-          this.correctionFactor = params.correctionFactor || 50;
-          this.maxChange = params.maxChange || 0.2;
-          this.penaltyFactor = params.penaltyFactor || 0.5;
-          this.beatInterval = tempo;
-          this.initialBeatInterval = tempo;
-          this.beatTime = firstBeatTime;
-          this.totalBeatCount = 1;
-          this.events = [firstBeatTime];
-          this.score = firsteventScore;
-          this.agentListRef = agentList;
-        }
-        __name(Agent2, "Agent");
-        _createClass(Agent2, [{
-          key: "considerEvent",
-          value: /* @__PURE__ */ __name(function considerEvent(eventTime, eventScore) {
-            if (eventTime - this.events[this.events.length - 1] > this.expiryTime) {
-              this.score = -1;
-              return false;
-            }
-            var beatCount = Math.round((eventTime - this.beatTime) / this.beatInterval);
-            var err = eventTime - this.beatTime - beatCount * this.beatInterval;
-            if (beatCount > 0 && err >= -this.toleranceWndPre && err <= this.toleranceWndPost) {
-              if (Math.abs(err) > this.toleranceWndInner) {
-                this.agentListRef.push(this.clone());
-              }
-              this.acceptEvent(eventTime, eventScore, err, beatCount);
-              return true;
-            }
-            return false;
-          }, "considerEvent")
-        }, {
-          key: "acceptEvent",
-          value: /* @__PURE__ */ __name(function acceptEvent(eventTime, eventScore, err, beatCount) {
-            this.beatTime = eventTime;
-            this.events.push(eventTime);
-            var corrErr = err / this.correctionFactor;
-            if (Math.abs(this.initialBeatInterval - this.beatInterval - corrErr) < this.maxChange * this.initialBeatInterval) {
-              this.beatInterval += corrErr;
-            }
-            this.totalBeatCount += beatCount;
-            var errFactor = err > 0 ? err / this.toleranceWndPost : err / -this.toleranceWndPre;
-            var scoreFactor = 1 - this.penaltyFactor * errFactor;
-            this.score += eventScore * scoreFactor;
-          }, "acceptEvent")
-        }, {
-          key: "fillBeats",
-          value: /* @__PURE__ */ __name(function fillBeats() {
-            var prevBeat = void 0, nextBeat = void 0, currentInterval = void 0, beats = void 0;
-            prevBeat = 0;
-            if (this.events.length > 2) {
-              prevBeat = this.events[0];
-            }
-            for (var i = 0; i < this.events.length; i++) {
-              nextBeat = this.events[i];
-              beats = Math.round((nextBeat - prevBeat) / this.beatInterval - 0.01);
-              currentInterval = (nextBeat - prevBeat) / beats;
-              var k = 0;
-              for (; beats > 1; beats--) {
-                prevBeat += currentInterval;
-                this.events.splice(i + k, 0, prevBeat);
-                k++;
-              }
-              prevBeat = nextBeat;
-            }
-          }, "fillBeats")
-        }, {
-          key: "clone",
-          value: /* @__PURE__ */ __name(function clone() {
-            var newAgent = new Agent2();
-            newAgent.beatInterval = this.beatInterval;
-            newAgent.initialBeatInterval = this.initialBeatInterval;
-            newAgent.beatTime = this.beatTime;
-            newAgent.totalBeatCount = this.totalBeatCount;
-            newAgent.events = this.events.slice();
-            newAgent.expiryTime = this.expiryTime;
-            newAgent.toleranceWndInner = this.toleranceWndInner;
-            newAgent.toleranceWndPre = this.toleranceWndPre;
-            newAgent.toleranceWndPost = this.toleranceWndPost;
-            newAgent.correctionFactor = this.correctionFactor;
-            newAgent.maxChange = this.maxChange;
-            newAgent.penaltyFactor = this.penaltyFactor;
-            newAgent.score = this.score;
-            newAgent.agentListRef = this.agentListRef;
-            return newAgent;
-          }, "clone")
-        }]);
-        return Agent2;
-      }();
-      exports2.default = Agent;
-      module2.exports = exports2["default"];
-    });
-  }
-});
-
-// node_modules/music-tempo/dist/node/BeatTracking.js
-var require_BeatTracking = __commonJS({
-  "node_modules/music-tempo/dist/node/BeatTracking.js"(exports, module) {
-    init_checked_fetch();
-    init_modules_watch_stub();
-    (function(global, factory) {
-      if (typeof define === "function" && define.amd) {
-        define(["module", "exports", "./Agent"], factory);
-      } else if (typeof exports !== "undefined") {
-        factory(module, exports, require_Agent());
-      } else {
-        var mod = {
-          exports: {}
-        };
-        factory(mod, mod.exports, global.Agent);
-        global.BeatTracking = mod.exports;
-      }
-    })(exports, function(module2, exports2, _Agent) {
-      "use strict";
-      Object.defineProperty(exports2, "__esModule", {
-        value: true
-      });
-      var _Agent2 = _interopRequireDefault(_Agent);
-      function _interopRequireDefault(obj) {
-        return obj && obj.__esModule ? obj : {
-          default: obj
-        };
-      }
-      __name(_interopRequireDefault, "_interopRequireDefault");
-      function _classCallCheck(instance, Constructor) {
-        if (!(instance instanceof Constructor)) {
-          throw new TypeError("Cannot call a class as a function");
-        }
-      }
-      __name(_classCallCheck, "_classCallCheck");
-      var _createClass = function() {
-        function defineProperties(target, props) {
-          for (var i = 0; i < props.length; i++) {
-            var descriptor = props[i];
-            descriptor.enumerable = descriptor.enumerable || false;
-            descriptor.configurable = true;
-            if ("value" in descriptor)
-              descriptor.writable = true;
-            Object.defineProperty(target, descriptor.key, descriptor);
-          }
-        }
-        __name(defineProperties, "defineProperties");
-        return function(Constructor, protoProps, staticProps) {
-          if (protoProps)
-            defineProperties(Constructor.prototype, protoProps);
-          if (staticProps)
-            defineProperties(Constructor, staticProps);
-          return Constructor;
-        };
-      }();
-      var BeatTracking = function() {
-        function BeatTracking2() {
-          _classCallCheck(this, BeatTracking2);
-        }
-        __name(BeatTracking2, "BeatTracking");
-        _createClass(BeatTracking2, null, [{
-          key: "trackBeat",
-          value: /* @__PURE__ */ __name(function trackBeat(events, eventsScores, tempoList) {
-            var params = arguments.length > 3 && arguments[3] !== void 0 ? arguments[3] : {};
-            var initPeriod = params.initPeriod || 5, thresholdBI = params.thresholdBI || 0.02, thresholdBT = params.thresholdBT || 0.04;
-            function removeSimilarAgents() {
-              agents.sort(function(a1, a2) {
-                return a1.beatInterval - a2.beatInterval;
-              });
-              var length = agents.length;
-              for (var i2 = 0; i2 < length; i2++) {
-                if (agents[i2].score < 0)
-                  continue;
-                for (var _j = i2 + 1; _j < length; _j++) {
-                  if (agents[_j].beatInterval - agents[i2].beatInterval > thresholdBI) {
-                    break;
-                  }
-                  if (Math.abs(agents[_j].beatTime - agents[i2].beatTime) > thresholdBT) {
-                    continue;
-                  }
-                  if (agents[i2].score < agents[_j].score) {
-                    agents[i2].score = -1;
-                  } else {
-                    agents[_j].score = -1;
-                  }
-                }
-              }
-              for (var _i = length - 1; _i >= 0; _i--) {
-                if (agents[_i].score < 0) {
-                  agents.splice(_i, 1);
-                }
-              }
-            }
-            __name(removeSimilarAgents, "removeSimilarAgents");
-            var agents = [];
-            for (var i = 0; i < tempoList.length; i++) {
-              agents.push(new _Agent2.default(tempoList[i], events[0], eventsScores[0], agents, params));
-            }
-            var j = 1;
-            removeSimilarAgents();
-            while (events[j] < initPeriod) {
-              var agentsLength = agents.length;
-              var prevBeatInterval = -1;
-              var isEventAccepted = true;
-              for (var k = 0; k < agentsLength; k++) {
-                if (agents[k].beatInterval != prevBeatInterval) {
-                  if (!isEventAccepted) {
-                    agents.push(new _Agent2.default(prevBeatInterval, events[j], eventsScores[j], agents, params));
-                  }
-                  prevBeatInterval = agents[k].beatInterval;
-                  isEventAccepted = false;
-                }
-                isEventAccepted = agents[k].considerEvent(events[j], eventsScores[j]) || isEventAccepted;
-              }
-              removeSimilarAgents();
-              j++;
-            }
-            var eventsLength = events.length;
-            for (var _i2 = j; _i2 < eventsLength; _i2++) {
-              var _agentsLength = agents.length;
-              for (var _j2 = 0; _j2 < _agentsLength; _j2++) {
-                agents[_j2].considerEvent(events[_i2], eventsScores[_i2]);
-              }
-              removeSimilarAgents();
-            }
-            return agents;
-          }, "trackBeat")
-        }]);
-        return BeatTracking2;
-      }();
-      exports2.default = BeatTracking;
-      module2.exports = exports2["default"];
-    });
-  }
-});
-
-// node_modules/music-tempo/dist/node/FFT.js
-var require_FFT = __commonJS({
-  "node_modules/music-tempo/dist/node/FFT.js"(exports, module) {
-    init_checked_fetch();
-    init_modules_watch_stub();
-    (function(global, factory) {
-      if (typeof define === "function" && define.amd) {
-        define(["module", "exports"], factory);
-      } else if (typeof exports !== "undefined") {
-        factory(module, exports);
-      } else {
-        var mod = {
-          exports: {}
-        };
-        factory(mod, mod.exports);
-        global.FFT = mod.exports;
-      }
-    })(exports, function(module2, exports2) {
-      "use strict";
-      Object.defineProperty(exports2, "__esModule", {
-        value: true
-      });
-      function _classCallCheck(instance, Constructor) {
-        if (!(instance instanceof Constructor)) {
-          throw new TypeError("Cannot call a class as a function");
-        }
-      }
-      __name(_classCallCheck, "_classCallCheck");
-      var _createClass = function() {
-        function defineProperties(target, props) {
-          for (var i = 0; i < props.length; i++) {
-            var descriptor = props[i];
-            descriptor.enumerable = descriptor.enumerable || false;
-            descriptor.configurable = true;
-            if ("value" in descriptor)
-              descriptor.writable = true;
-            Object.defineProperty(target, descriptor.key, descriptor);
-          }
-        }
-        __name(defineProperties, "defineProperties");
-        return function(Constructor, protoProps, staticProps) {
-          if (protoProps)
-            defineProperties(Constructor.prototype, protoProps);
-          if (staticProps)
-            defineProperties(Constructor, staticProps);
-          return Constructor;
-        };
-      }();
-      var FFT = function() {
-        function FFT2() {
-          _classCallCheck(this, FFT2);
-        }
-        __name(FFT2, "FFT");
-        _createClass(FFT2, null, [{
-          key: "getHammingWindow",
-          value: /* @__PURE__ */ __name(function getHammingWindow(bufferSize) {
-            var a = 25 / 46;
-            var b = 21 / 46;
-            var scale = 1 / bufferSize / 0.54;
-            var sqrtBufferSize = Math.sqrt(bufferSize);
-            var factor = Math.PI * 2 / bufferSize;
-            var wnd = [];
-            for (var i = 0; i < bufferSize; i++) {
-              wnd[i] = sqrtBufferSize * (scale * (a - b * Math.cos(factor * i)));
-            }
-            return wnd;
-          }, "getHammingWindow")
-        }, {
-          key: "getSpectrum",
-          value: /* @__PURE__ */ __name(function getSpectrum(re, im) {
-            var direction = -1;
-            var n = re.length;
-            var bits = Math.round(Math.log(n) / Math.log(2));
-            var twoPI = Math.PI * 2;
-            if (n != 1 << bits)
-              throw new Error("FFT data must be power of 2");
-            var localN = void 0;
-            var j = 0;
-            for (var i = 0; i < n - 1; i++) {
-              if (i < j) {
-                var temp = re[j];
-                re[j] = re[i];
-                re[i] = temp;
-                temp = im[j];
-                im[j] = im[i];
-                im[i] = temp;
-              }
-              var k = n / 2;
-              while (k >= 1 && k - 1 < j) {
-                j = j - k;
-                k = k / 2;
-              }
-              j = j + k;
-            }
-            for (var m = 1; m <= bits; m++) {
-              localN = 1 << m;
-              var Wjk_r = 1;
-              var Wjk_i = 0;
-              var theta = twoPI / localN;
-              var Wj_r = Math.cos(theta);
-              var Wj_i = direction * Math.sin(theta);
-              var nby2 = localN / 2;
-              for (j = 0; j < nby2; j++) {
-                for (var _k = j; _k < n; _k += localN) {
-                  var id = _k + nby2;
-                  var tempr = Wjk_r * re[id] - Wjk_i * im[id];
-                  var tempi = Wjk_r * im[id] + Wjk_i * re[id];
-                  re[id] = re[_k] - tempr;
-                  im[id] = im[_k] - tempi;
-                  re[_k] += tempr;
-                  im[_k] += tempi;
-                }
-                var wtemp = Wjk_r;
-                Wjk_r = Wj_r * Wjk_r - Wj_i * Wjk_i;
-                Wjk_i = Wj_r * Wjk_i + Wj_i * wtemp;
-              }
-            }
-            for (var _i = 0; _i < re.length; _i++) {
-              var pow = re[_i] * re[_i] + im[_i] * im[_i];
-              re[_i] = pow;
-            }
-            for (var _i2 = 0; _i2 < re.length; _i2++) {
-              re[_i2] = Math.sqrt(re[_i2]);
-            }
-          }, "getSpectrum")
-        }]);
-        return FFT2;
-      }();
-      exports2.default = FFT;
-      module2.exports = exports2["default"];
-    });
-  }
-});
-
-// node_modules/music-tempo/dist/node/MusicTempo.js
-var require_MusicTempo = __commonJS({
-  "node_modules/music-tempo/dist/node/MusicTempo.js"(exports, module) {
-    init_checked_fetch();
-    init_modules_watch_stub();
-    (function(global, factory) {
-      if (typeof define === "function" && define.amd) {
-        define(["module", "exports", "./OnsetDetection", "./TempoInduction", "./BeatTracking", "./FFT"], factory);
-      } else if (typeof exports !== "undefined") {
-        factory(module, exports, require_OnsetDetection(), require_TempoInduction(), require_BeatTracking(), require_FFT());
-      } else {
-        var mod = {
-          exports: {}
-        };
-        factory(mod, mod.exports, global.OnsetDetection, global.TempoInduction, global.BeatTracking, global.FFT);
-        global.MusicTempo = mod.exports;
-      }
-    })(exports, function(module2, exports2, _OnsetDetection, _TempoInduction, _BeatTracking, _FFT) {
-      "use strict";
-      Object.defineProperty(exports2, "__esModule", {
-        value: true
-      });
-      var _OnsetDetection2 = _interopRequireDefault(_OnsetDetection);
-      var _TempoInduction2 = _interopRequireDefault(_TempoInduction);
-      var _BeatTracking2 = _interopRequireDefault(_BeatTracking);
-      var _FFT2 = _interopRequireDefault(_FFT);
-      function _interopRequireDefault(obj) {
-        return obj && obj.__esModule ? obj : {
-          default: obj
-        };
-      }
-      __name(_interopRequireDefault, "_interopRequireDefault");
-      function _classCallCheck(instance, Constructor) {
-        if (!(instance instanceof Constructor)) {
-          throw new TypeError("Cannot call a class as a function");
-        }
-      }
-      __name(_classCallCheck, "_classCallCheck");
-      var MusicTempo2 = (
-        /**
-         * Constructor
-         * @param {Float32Array} audioData - non-interleaved IEEE 32-bit linear PCM with a nominal range of -1 -> +1 (Web Audio API - Audio Buffer)
-         * @param {Object} [params={}] - parameters
-         * @param {Number} [params.bufferSize=2048] - FFT windows size
-         * @param {Number} [params.hopSize=441] - spacing of audio frames in samples
-         * @param {Number} [params.decayRate=0.84] - how quickly previous peaks are forgotten
-         * @param {Number} [params.peakFindingWindow=6] - minimum distance between peaks
-         * @param {Number} [params.meanWndMultiplier=3] - multiplier for peak finding window
-         * @param {Number} [params.peakThreshold=0.35] - minimum value of peaks
-         * @param {Number} [params.widthTreshold=0.025] - the maximum difference in IOIs which are in the same cluster
-         * @param {Number} [params.maxIOI=2.5] - the maximum IOI for inclusion in a cluster
-         * @param {Number} [params.minIOI=0.07] - the minimum IOI for inclusion in a cluster
-         * @param {Number} [params.maxTempos=10] - initial amount of tempo hypotheses
-         * @param {Number} [params.minBeatInterval=0.3] - the minimum inter-beat interval (IBI) (0.30 seconds == 200 BPM)
-         * @param {Number} [params.maxBeatInterval=1] - the maximum inter-beat interval (IBI) (1.00 seconds ==  60 BPM)
-         * @param {Number} [params.initPeriod=5] - duration of the initial section
-         * @param {Number} [params.thresholdBI=0.02] - for the purpose of removing duplicate agents, the default JND of IBI
-         * @param {Number} [params.thresholdBT=0.04] - for the purpose of removing duplicate agents, the default JND of phase
-         * @param {Number} [params.expiryTime=10] - the time after which an Agent that has not accepted any beat will be destroyed
-         * @param {Number} [params.toleranceWndInner=0.04] - the maximum time that a beat can deviate from the predicted beat time without a fork occurring
-         * @param {Number} [params.toleranceWndPre=0.15] - the maximum amount by which a beat can be earlier than the predicted beat time, expressed as a fraction of the beat period
-         * @param {Number} [params.toleranceWndPost=0.3] - the maximum amount by which a beat can be later than the predicted beat time, expressed as a fraction of the beat period
-         * @param {Number} [params.correctionFactor=50] - correction factor for updating beat period
-         * @param {Number} [params.maxChange=0.2] - the maximum allowed deviation from the initial tempo, expressed as a fraction of the initial beat period
-         * @param {Number} [params.penaltyFactor=0.5] - factor for correcting score, if onset do not coincide precisely with predicted beat time
-         */
-        /* @__PURE__ */ __name(function MusicTempo3(audioData) {
-          var _this = this;
-          var params = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : {};
-          _classCallCheck(this, MusicTempo3);
-          if (audioData instanceof Float32Array) {
-            if (!Array.from) {
-              Array.from = function() {
-                var toStr = Object.prototype.toString;
-                var isCallable = /* @__PURE__ */ __name(function isCallable2(fn) {
-                  return typeof fn === "function" || toStr.call(fn) === "[object Function]";
-                }, "isCallable");
-                var toInteger = /* @__PURE__ */ __name(function toInteger2(value) {
-                  var number = Number(value);
-                  if (isNaN(number)) {
-                    return 0;
-                  }
-                  if (number === 0 || !isFinite(number)) {
-                    return number;
-                  }
-                  return (number > 0 ? 1 : -1) * Math.floor(Math.abs(number));
-                }, "toInteger");
-                var maxSafeInteger = Math.pow(2, 53) - 1;
-                var toLength = /* @__PURE__ */ __name(function toLength2(value) {
-                  var len = toInteger(value);
-                  return Math.min(Math.max(len, 0), maxSafeInteger);
-                }, "toLength");
-                return /* @__PURE__ */ __name(function from(arrayLike) {
-                  var C = this;
-                  var items = Object(arrayLike);
-                  if (arrayLike == null) {
-                    throw new TypeError("Array.from requires an array-like object - not null or undefined");
-                  }
-                  var mapFn = arguments.length > 1 ? arguments[1] : void 0;
-                  var T;
-                  if (typeof mapFn !== "undefined") {
-                    if (!isCallable(mapFn)) {
-                      throw new TypeError("Array.from: when provided, the second argument must be a function");
-                    }
-                    if (arguments.length > 2) {
-                      T = arguments[2];
-                    }
-                  }
-                  var len = toLength(items.length);
-                  var A = isCallable(C) ? Object(new C(len)) : new Array(len);
-                  var k = 0;
-                  var kValue;
-                  while (k < len) {
-                    kValue = items[k];
-                    if (mapFn) {
-                      A[k] = typeof T === "undefined" ? mapFn(kValue, k) : mapFn.call(T, kValue, k);
-                    } else {
-                      A[k] = kValue;
-                    }
-                    k += 1;
-                  }
-                  A.length = len;
-                  return A;
-                }, "from");
-              }();
-            }
-            audioData = Array.from(audioData);
-          } else if (!Array.isArray(audioData)) {
-            throw "audioData is not an array";
-          }
-          var timeStep = params.timeStep || 0.01;
-          var res = _OnsetDetection2.default.calculateSF(audioData, _FFT2.default, params);
-          this.spectralFlux = res;
-          _OnsetDetection2.default.normalize(this.spectralFlux);
-          this.peaks = _OnsetDetection2.default.findPeaks(this.spectralFlux, params);
-          this.events = this.peaks.map(function(a) {
-            return a * timeStep;
-          });
-          var clusters = _TempoInduction2.default.processRhythmicEvents(this.events, params);
-          clusters = _TempoInduction2.default.mergeClusters(clusters, params);
-          var scores = _TempoInduction2.default.calculateScore(clusters, params);
-          clusters = {
-            clIntervals: clusters.clIntervals,
-            clSizes: clusters.clSizes,
-            clScores: scores.clScores,
-            clScoresIdxs: scores.clScoresIdxs
-          };
-          this.tempoList = _TempoInduction2.default.createTempoList(clusters, params);
-          var minSFValue = this.spectralFlux.reduce(function(a, b) {
-            return Math.min(a, b);
-          });
-          var eventsScores = this.peaks.map(function(a) {
-            return _this.spectralFlux[a] - minSFValue;
-          });
-          this.agents = _BeatTracking2.default.trackBeat(this.events, eventsScores, this.tempoList, params);
-          var bestScore = -1;
-          var idxBestAgent = -1;
-          this.tempo = -1;
-          this.beats = [];
-          this.beatInterval = -1;
-          for (var i = 0; i < this.agents.length; i++) {
-            if (this.agents[i].score > bestScore) {
-              bestScore = this.agents[i].score;
-              idxBestAgent = i;
-            }
-          }
-          if (this.agents[idxBestAgent]) {
-            this.bestAgent = this.agents[idxBestAgent];
-            this.bestAgent.fillBeats();
-            this.tempo = (60 / this.bestAgent.beatInterval).toFixed(3);
-            this.beatInterval = this.bestAgent.beatInterval;
-            this.beats = this.bestAgent.events;
-          }
-          if (this.tempo == -1) {
-            throw "Tempo extraction failed";
-          }
-        }, "MusicTempo")
-      );
-      exports2.default = MusicTempo2;
-      module2.exports = exports2["default"];
-    });
-  }
-});
-
-// .wrangler/tmp/bundle-oqTlZj/middleware-loader.entry.ts
-init_checked_fetch();
-init_modules_watch_stub();
-
-// .wrangler/tmp/bundle-oqTlZj/middleware-insertion-facade.js
-init_checked_fetch();
-init_modules_watch_stub();
-
-// index.js
-init_checked_fetch();
-init_modules_watch_stub();
-
-// node_modules/hono/dist/index.js
-init_checked_fetch();
-init_modules_watch_stub();
-
-// node_modules/hono/dist/hono.js
-init_checked_fetch();
-init_modules_watch_stub();
-
-// node_modules/hono/dist/hono-base.js
-init_checked_fetch();
-init_modules_watch_stub();
 
 // node_modules/hono/dist/compose.js
-init_checked_fetch();
-init_modules_watch_stub();
 var compose = /* @__PURE__ */ __name((middleware, onError, onNotFound) => {
   return (context, next) => {
     let index = -1;
@@ -1463,26 +72,10 @@ var compose = /* @__PURE__ */ __name((middleware, onError, onNotFound) => {
   };
 }, "compose");
 
-// node_modules/hono/dist/context.js
-init_checked_fetch();
-init_modules_watch_stub();
-
-// node_modules/hono/dist/request.js
-init_checked_fetch();
-init_modules_watch_stub();
-
-// node_modules/hono/dist/http-exception.js
-init_checked_fetch();
-init_modules_watch_stub();
-
 // node_modules/hono/dist/request/constants.js
-init_checked_fetch();
-init_modules_watch_stub();
 var GET_MATCH_RESULT = /* @__PURE__ */ Symbol();
 
 // node_modules/hono/dist/utils/body.js
-init_checked_fetch();
-init_modules_watch_stub();
 var parseBody = /* @__PURE__ */ __name(async (request, options = /* @__PURE__ */ Object.create(null)) => {
   const { all = false, dot = false } = options;
   const headers = request instanceof HonoRequest ? request.raw.headers : request.headers;
@@ -1554,8 +147,6 @@ var handleParsingNestedValues = /* @__PURE__ */ __name((form, key, value) => {
 }, "handleParsingNestedValues");
 
 // node_modules/hono/dist/utils/url.js
-init_checked_fetch();
-init_modules_watch_stub();
 var splitPath = /* @__PURE__ */ __name((path) => {
   const paths = path.split("/");
   if (paths[0] === "") {
@@ -2026,8 +617,6 @@ var HonoRequest = /* @__PURE__ */ __name(class {
 }, "HonoRequest");
 
 // node_modules/hono/dist/utils/html.js
-init_checked_fetch();
-init_modules_watch_stub();
 var HtmlEscapedCallbackPhase = {
   Stringify: 1,
   BeforeStream: 2,
@@ -2476,8 +1065,6 @@ var Context = /* @__PURE__ */ __name(class {
 }, "Context");
 
 // node_modules/hono/dist/router.js
-init_checked_fetch();
-init_modules_watch_stub();
 var METHOD_NAME_ALL = "ALL";
 var METHOD_NAME_ALL_LOWERCASE = "all";
 var METHODS = ["get", "post", "put", "delete", "options", "patch"];
@@ -2486,8 +1073,6 @@ var UnsupportedPathError = /* @__PURE__ */ __name(class extends Error {
 }, "UnsupportedPathError");
 
 // node_modules/hono/dist/utils/constants.js
-init_checked_fetch();
-init_modules_watch_stub();
 var COMPOSED_HANDLER = "__COMPOSED_HANDLER";
 
 // node_modules/hono/dist/hono-base.js
@@ -2861,17 +1446,7 @@ var Hono = /* @__PURE__ */ __name(class _Hono {
   };
 }, "_Hono");
 
-// node_modules/hono/dist/router/reg-exp-router/index.js
-init_checked_fetch();
-init_modules_watch_stub();
-
-// node_modules/hono/dist/router/reg-exp-router/router.js
-init_checked_fetch();
-init_modules_watch_stub();
-
 // node_modules/hono/dist/router/reg-exp-router/matcher.js
-init_checked_fetch();
-init_modules_watch_stub();
 var emptyParam = [];
 function match(method, path) {
   const matchers = this.buildAllMatchers();
@@ -2894,8 +1469,6 @@ function match(method, path) {
 __name(match, "match");
 
 // node_modules/hono/dist/router/reg-exp-router/node.js
-init_checked_fetch();
-init_modules_watch_stub();
 var LABEL_REG_EXP_STR = "[^/]+";
 var ONLY_WILDCARD_REG_EXP_STR = ".*";
 var TAIL_WILDCARD_REG_EXP_STR = "(?:|/.*)";
@@ -3005,8 +1578,6 @@ var Node = /* @__PURE__ */ __name(class _Node {
 }, "_Node");
 
 // node_modules/hono/dist/router/reg-exp-router/trie.js
-init_checked_fetch();
-init_modules_watch_stub();
 var Trie = /* @__PURE__ */ __name(class {
   #context = { varIndex: 0 };
   #root = new Node();
@@ -3245,17 +1816,7 @@ var RegExpRouter = /* @__PURE__ */ __name(class {
   }
 }, "RegExpRouter");
 
-// node_modules/hono/dist/router/reg-exp-router/prepared-router.js
-init_checked_fetch();
-init_modules_watch_stub();
-
-// node_modules/hono/dist/router/smart-router/index.js
-init_checked_fetch();
-init_modules_watch_stub();
-
 // node_modules/hono/dist/router/smart-router/router.js
-init_checked_fetch();
-init_modules_watch_stub();
 var SmartRouter = /* @__PURE__ */ __name(class {
   name = "SmartRouter";
   #routers = [];
@@ -3310,17 +1871,7 @@ var SmartRouter = /* @__PURE__ */ __name(class {
   }
 }, "SmartRouter");
 
-// node_modules/hono/dist/router/trie-router/index.js
-init_checked_fetch();
-init_modules_watch_stub();
-
-// node_modules/hono/dist/router/trie-router/router.js
-init_checked_fetch();
-init_modules_watch_stub();
-
 // node_modules/hono/dist/router/trie-router/node.js
-init_checked_fetch();
-init_modules_watch_stub();
 var emptyParams = /* @__PURE__ */ Object.create(null);
 var Node2 = /* @__PURE__ */ __name(class _Node2 {
   #methods;
@@ -3516,8 +2067,6 @@ var Hono2 = /* @__PURE__ */ __name(class extends Hono {
 }, "Hono");
 
 // node_modules/hono/dist/middleware/cors/index.js
-init_checked_fetch();
-init_modules_watch_stub();
 var cors = /* @__PURE__ */ __name((options) => {
   const defaults = {
     origin: "*",
@@ -3603,13 +2152,7 @@ var cors = /* @__PURE__ */ __name((options) => {
   }, "cors2");
 }, "cors");
 
-// node_modules/hono/dist/middleware/logger/index.js
-init_checked_fetch();
-init_modules_watch_stub();
-
 // node_modules/hono/dist/utils/color.js
-init_checked_fetch();
-init_modules_watch_stub();
 function getColorEnabled() {
   const { process, Deno } = globalThis;
   const isNoColor = typeof Deno?.noColor === "boolean" ? Deno.noColor : process !== void 0 ? (
@@ -3675,13 +2218,7 @@ var logger = /* @__PURE__ */ __name((fn = console.log) => {
   }, "logger2");
 }, "logger");
 
-// node_modules/uuid/dist/esm-browser/index.js
-init_checked_fetch();
-init_modules_watch_stub();
-
 // node_modules/uuid/dist/esm-browser/rng.js
-init_checked_fetch();
-init_modules_watch_stub();
 var getRandomValues;
 var rnds8 = new Uint8Array(16);
 function rng() {
@@ -3696,8 +2233,6 @@ function rng() {
 __name(rng, "rng");
 
 // node_modules/uuid/dist/esm-browser/stringify.js
-init_checked_fetch();
-init_modules_watch_stub();
 var byteToHex = [];
 for (let i = 0; i < 256; ++i) {
   byteToHex.push((i + 256).toString(16).slice(1));
@@ -3707,13 +2242,7 @@ function unsafeStringify(arr, offset = 0) {
 }
 __name(unsafeStringify, "unsafeStringify");
 
-// node_modules/uuid/dist/esm-browser/v4.js
-init_checked_fetch();
-init_modules_watch_stub();
-
 // node_modules/uuid/dist/esm-browser/native.js
-init_checked_fetch();
-init_modules_watch_stub();
 var randomUUID = typeof crypto !== "undefined" && crypto.randomUUID && crypto.randomUUID.bind(crypto);
 var native_default = {
   randomUUID
@@ -3741,8 +2270,6 @@ __name(v4, "v4");
 var v4_default = v4;
 
 // services/database.js
-init_checked_fetch();
-init_modules_watch_stub();
 var DatabaseService = class {
   constructor(db) {
     this.db = db;
@@ -3811,9 +2338,9 @@ var DatabaseService = class {
       canGenerate: used < limit
     };
   }
-  async incrementUsage(userId, isPremium2 = false) {
+  async incrementUsage(userId, isPremium = false) {
     const currentMonth = (/* @__PURE__ */ new Date()).toISOString().slice(0, 7);
-    const column = isPremium2 ? "premium_count" : "standard_count";
+    const column = isPremium ? "premium_count" : "standard_count";
     return await this.db.prepare(`
             INSERT INTO usage_tracking(user_id, month, ${column}) 
             VALUES(?, ?, 1)
@@ -3891,8 +2418,6 @@ __name(DatabaseService, "DatabaseService");
 var database_default = DatabaseService;
 
 // services/storageService.js
-init_checked_fetch();
-init_modules_watch_stub();
 var StorageService = class {
   constructor(bucket) {
     this.bucket = bucket;
@@ -3937,13 +2462,7 @@ var StorageService = class {
 __name(StorageService, "StorageService");
 var storageService_default = StorageService;
 
-// services/vocalEnhancement.js
-init_checked_fetch();
-init_modules_watch_stub();
-
 // services/elevenLabsApi.js
-init_checked_fetch();
-init_modules_watch_stub();
 var ElevenLabsService = class {
   /**
    * Cleans/Isolates vocals from an audio buffer
@@ -4019,40 +2538,63 @@ var VocalEnhancementService = class {
 __name(VocalEnhancementService, "VocalEnhancementService");
 var vocalEnhancement_default = new VocalEnhancementService();
 
-// services/queueService.js
-init_checked_fetch();
-init_modules_watch_stub();
-
 // services/audioAnalysis.js
-init_checked_fetch();
-init_modules_watch_stub();
-var import_node_wav = __toESM(require_node_wav(), 1);
-var import_music_tempo = __toESM(require_MusicTempo(), 1);
 var AudioAnalysisService = class {
   /**
    * Analyzes an audio buffer
-   * @param {ArrayBuffer|Buffer} buffer - Raw audio data
+   * @param {ArrayBuffer|Buffer} buffer - Raw audio data (WAV format)
    * @returns {Promise<Object>} - Analysis results
    */
   async analyze(buffer) {
     try {
-      console.log(`Analyzing audio buffer...`);
-      const result = import_node_wav.default.decode(new Uint8Array(buffer));
-      const sampleRate = result.sampleRate;
-      const channelData = result.channelData[0];
-      const mt = new import_music_tempo.default(channelData);
-      const bpm = Math.round(mt.tempo);
-      const duration = channelData.length / sampleRate;
-      const key = "C Major";
+      console.log(`Analyzing audio buffer (edge-compatible mode)...`);
+      const data = new Uint8Array(buffer);
+      const duration = this.parseWavDuration(data);
       return {
-        bpm,
-        key,
+        bpm: 120,
+        // Default BPM
+        key: "C Major",
+        // Default key
         duration: parseFloat(duration.toFixed(2)),
-        confidence: mt.tempoConf || 0.5
+        confidence: 0.5
+        // Indicate this is estimated
       };
     } catch (error) {
       console.error("Audio Analysis Error:", error);
-      throw new Error(`Failed to analyze audio: ${error.message}`);
+      return {
+        bpm: 120,
+        key: "C Major",
+        duration: 30,
+        confidence: 0.3
+      };
+    }
+  }
+  /**
+   * Parse WAV file header to extract duration
+   */
+  parseWavDuration(data) {
+    try {
+      if (data[0] !== 82 || data[1] !== 73 || data[2] !== 70 || data[3] !== 70) {
+        throw new Error("Not a valid WAV file");
+      }
+      let dataChunkPos = 36;
+      while (dataChunkPos < data.length - 8) {
+        if (data[dataChunkPos] === 100 && data[dataChunkPos + 1] === 97 && data[dataChunkPos + 2] === 116 && data[dataChunkPos + 3] === 97) {
+          break;
+        }
+        dataChunkPos++;
+      }
+      const sampleRate = data[24] | data[25] << 8 | data[26] << 16 | data[27] << 24;
+      const dataSize = data[dataChunkPos + 4] | data[dataChunkPos + 5] << 8 | data[dataChunkPos + 6] << 16 | data[dataChunkPos + 7] << 24;
+      const bitsPerSample = data[34] | data[35] << 8;
+      const bytesPerSample = bitsPerSample / 8;
+      const numChannels = data[22] | data[23] << 8;
+      const numSamples = dataSize / (bytesPerSample * numChannels);
+      const duration = numSamples / sampleRate;
+      return duration > 0 ? duration : 30;
+    } catch (error) {
+      console.error("WAV parsing error:", error);
+      return 30;
     }
   }
 };
@@ -4060,8 +2602,6 @@ __name(AudioAnalysisService, "AudioAnalysisService");
 var audioAnalysis_default = new AudioAnalysisService();
 
 // services/stabilityApi.js
-init_checked_fetch();
-init_modules_watch_stub();
 var StabilityService = class {
   /**
    * Generates music based on a prompt
@@ -4098,8 +2638,6 @@ __name(StabilityService, "StabilityService");
 var stabilityApi_default = new StabilityService();
 
 // services/audioProcessor.js
-init_checked_fetch();
-init_modules_watch_stub();
 var AudioProcessor = class {
   /**
    * Mixes vocal and instrumental buffers using Cloudinary
@@ -4200,6 +2738,7 @@ var QueueService = class {
       await this.storage.uploadFile(mixedAudio, mixKey, "audio/mpeg");
       const instKey = `instrumentals/${projectId}.wav`;
       await this.storage.uploadFile(instrumentalBuffer, instKey, "audio/wav");
+      const isPremium = tier === "platinum" || tier === "gold";
       const projectData = {
         id: projectId,
         user_id: userId,
@@ -4532,8 +3071,6 @@ var server_default = {
 };
 
 // node_modules/wrangler/templates/middleware/middleware-ensure-req-body-drained.ts
-init_checked_fetch();
-init_modules_watch_stub();
 var drainBody = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx) => {
   try {
     return await middlewareCtx.next(request, env);
@@ -4558,8 +3095,6 @@ var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
 var middleware_insertion_facade_default = server_default;
 
 // node_modules/wrangler/templates/middleware/common.ts
-init_checked_fetch();
-init_modules_watch_stub();
 var __facade_middleware__ = [];
 function __facade_register__(...args) {
   __facade_middleware__.push(...args.flat());

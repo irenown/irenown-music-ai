@@ -63,6 +63,7 @@ class QueueService {
             await this.storage.uploadFile(instrumentalBuffer, instKey, 'audio/wav');
 
             // 7. Update DB
+            const isPremium = (tier === 'platinum' || tier === 'gold');
             const projectData = {
                 id: projectId,
                 user_id: userId,
