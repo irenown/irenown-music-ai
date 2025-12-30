@@ -94,8 +94,6 @@ class QueueService {
             throw error; // Re-throw to allow Cloudflare Queue to handle retries
         }
     }
-
-}
 }
 
 export default QueueService;
