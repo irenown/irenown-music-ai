@@ -440,7 +440,7 @@ export function UploadSection({ projectData, setProjectData, onStartProcessing }
                   Redo
                 </Button>
                 <Button
-                  className="gap-2 bg-green-500 hover:bg-green-600 text-white"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
                   onClick={handleUploadRecording}
                 >
                   <Upload className="h-4 w-4" />
