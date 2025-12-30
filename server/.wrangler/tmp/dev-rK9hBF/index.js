@@ -3811,9 +3811,9 @@ var DatabaseService = class {
       canGenerate: used < limit
     };
   }
-  async incrementUsage(userId, isPremium = false) {
+  async incrementUsage(userId, isPremium2 = false) {
     const currentMonth = (/* @__PURE__ */ new Date()).toISOString().slice(0, 7);
-    const column = isPremium ? "premium_count" : "standard_count";
+    const column = isPremium2 ? "premium_count" : "standard_count";
     return await this.db.prepare(`
             INSERT INTO usage_tracking(user_id, month, ${column}) 
             VALUES(?, ?, 1)
@@ -4104,13 +4104,13 @@ var AudioProcessor = class {
   /**
    * Mixes vocal and instrumental buffers using Cloudinary
    */
-  async mixTracks(vocalBuffer, instrumentalBuffer, env) {
+  async mixTracks(vocalBuffer, instrumentalBuffer2, env) {
     const cloudName = env.ASSET_MANAGER_ID;
     const apiKey = env.ASSET_MANAGER_KEY;
     const apiSecret = env.ASSET_MANAGER_SECRET;
     console.log(`Mixing via Cloudinary...`);
     try {
-      const instUpload = await this.uploadToCloudinary(instrumentalBuffer, "inst", env);
+      const instUpload = await this.uploadToCloudinary(instrumentalBuffer2, "inst", env);
       const instId = instUpload.public_id;
       const vocalUpload = await this.uploadToCloudinary(vocalBuffer, "vocal", env);
       const vocalId = vocalUpload.public_id.replace(/\//g, ":");
@@ -4187,20 +4187,11 @@ var QueueService = class {
       const augmentedVocal = await vocalEnhancement_default.enhance(vocalBuffer, this.env);
       const analysis = await audioAnalysis_default.analyze(vocalBuffer);
       const finalBpm = bpm || analysis.bpm;
-      let instrumentalBuffer;
-      const isPremium = tier === "platinum" || tier === "gold";
-      if (isPremium) {
-        instrumentalBuffer = await elevenLabsApi_default.generateMusic({
-          prompt: `melodic ${genre} instrumental, key of ${analysis.key}, ${finalBpm} BPM`,
-          duration: analysis.duration
-        }, this.env);
-      } else {
-        instrumentalBuffer = await stabilityApi_default.generateMusic({
-          prompt: `catchy melodic ${genre} instrumental arrangement`,
-          bpm: finalBpm,
-          duration: analysis.duration
-        }, this.env);
-      }
+      console.log(`Generating music with ElevenLabs (tier: ${tier})`);
+      instrumentalBuffer = await elevenLabsApi_default.generateMusic({
+        prompt: `melodic ${genre} instrumental, key of ${analysis.key}, ${finalBpm} BPM`,
+        duration: analysis.duration
+      }, this.env);
       const mixedAudio = await audioProcessor_default.mixTracks(augmentedVocal, instrumentalBuffer, this.env);
       const mixKey = `output/${projectId}.mp3`;
       await this.storage.uploadFile(mixedAudio, mixKey, "audio/mpeg");

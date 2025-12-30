@@ -39,6 +39,14 @@ class QueueService {
             const finalBpm = bpm || analysis.bpm;
 
             // 4. Music Generation
+            // TEMPORARY FIX: Use ElevenLabs for all tiers until Stability AI endpoint is resolved
+            console.log(`Generating music with ElevenLabs (tier: ${tier})`);
+            instrumentalBuffer = await elevenLabsApi.generateMusic({
+                prompt: `melodic ${genre} instrumental, key of ${analysis.key}, ${finalBpm} BPM`,
+                duration: analysis.duration
+            }, this.env);
+
+            /* DISABLED UNTIL STABILITY AI ENDPOINT IS FIXED
             let instrumentalBuffer;
             const isPremium = (tier === 'platinum' || tier === 'gold');
 
@@ -54,6 +62,7 @@ class QueueService {
                     duration: analysis.duration
                 }, this.env);
             }
+            */
 
             // 5. Mixing & Mastering (Cloudinary-based mixing)
             const mixedAudio = await audioProcessor.mixTracks(augmentedVocal, instrumentalBuffer, this.env);
