@@ -34,7 +34,7 @@ export function StudioInterface() {
     mood: "Upbeat",
     key: "C Major",
     tempo: 120,
-    duration: 180,
+    duration: 30, // Default duration 30s
     qualityTier: "standard",
   })
 
@@ -48,6 +48,8 @@ export function StudioInterface() {
       formData.append("vocal", projectData.vocalFile)
       formData.append("genre", projectData.genre)
       formData.append("bpm", projectData.tempo.toString())
+      formData.append("key", projectData.key)
+      formData.append("duration", projectData.duration.toString())
       formData.append("name", projectData.vocalFile.name.replace(/\.[^/.]+$/, ""))
 
       const data = await apiClient.request('/api/produce', {

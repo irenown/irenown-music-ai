@@ -1,5 +1,5 @@
 const fs = require('fs');
-const http = require('http');
+const https = require('https');
 const path = require('path');
 
 const filePath = path.join('server', 'node_modules', 'node-wav', 'file.wav');
@@ -16,27 +16,28 @@ const prefix = `--${boundary}\r\n` +
     `Content-Disposition: form-data; name="vocal"; filename="test.wav"\r\n` +
     `Content-Type: audio/wav\r\n\r\n`;
 
-const genrePart = `\r\n--${boundary}\r\n` +
+const metadataPart = `\r\n--${boundary}\r\n` +
     `Content-Disposition: form-data; name="genre"\r\n\r\npop` +
     `\r\n--${boundary}\r\n` +
     `Content-Disposition: form-data; name="bpm"\r\n\r\n120` +
     `\r\n--${boundary}\r\n` +
-    `Content-Disposition: form-data; name="name"\r\n\r\nDebug Test`;
+    `Content-Disposition: form-data; name="key"\r\n\r\nG Minor` +
+    `\r\n--${boundary}\r\n` +
+    `Content-Disposition: form-data; name="name"\r\n\r\nDebug Harmony Fix Test`;
 
 const suffix = `\r\n--${boundary}--\r\n`;
 
 const payload = Buffer.concat([
     Buffer.from(prefix),
     fileBuffer,
-    Buffer.from(genrePart),
+    Buffer.from(metadataPart),
     Buffer.from(suffix)
 ]);
 
-console.log('Sending request...');
+console.log('Sending request to production (Harmony & Sync Fix Verification)...');
 
-const req = http.request({
-    hostname: '127.0.0.1',
-    port: 8787,
+const req = https.request({
+    hostname: 'irenown-backend.irenown-api.workers.dev',
     path: '/api/debug-produce',
     method: 'POST',
     headers: {
@@ -51,9 +52,13 @@ const req = http.request({
         console.log('HTTP Status:', res.statusCode);
         try {
             const json = JSON.parse(data);
-            console.log('ERROR_MSG_START');
-            console.log(json.error);
-            console.log('ERROR_MSG_END');
+            if (json.status === 'success') {
+                console.log('SUCCESS_RESULT:', JSON.stringify(json.result, null, 2));
+            } else {
+                console.log('ERROR_MSG_START');
+                console.log(json.error);
+                console.log('ERROR_MSG_END');
+            }
         } catch (e) {
             console.log('Raw Body:', data.substring(0, 500));
         }

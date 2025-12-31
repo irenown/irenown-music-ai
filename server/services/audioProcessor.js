@@ -6,25 +6,33 @@ class AudioProcessor {
     /**
      * Mixes vocal and instrumental buffers using Cloudinary
      */
-    async mixTracks(vocalBuffer, instrumentalBuffer, env) {
+    async mixTracks(vocalBuffer, instrumentalBuffer, env, offset = 0) {
         const cloudName = env.ASSET_MANAGER_ID;
         const apiKey = env.ASSET_MANAGER_KEY;
         const apiSecret = env.ASSET_MANAGER_SECRET;
 
-        console.log(`Mixing via Cloudinary...`);
+        console.log(`Mixing via Cloudinary (Offset: ${offset}s)...`);
 
         try {
             // 1. Upload Instrumental (Base Track) to Cloudinary
-            const instUpload = await this.uploadToCloudinary(instrumentalBuffer, 'inst', env);
-            const instId = instUpload.public_id;
+            // ... (rest of logic) ...
+            let instId;
+            if (typeof instrumentalBuffer === 'string' && instrumentalBuffer.startsWith('http')) {
+                const instUpload = await this.uploadUrlToCloudinary(instrumentalBuffer, 'inst', env);
+                instId = instUpload.public_id;
+            } else {
+                const instUpload = await this.uploadToCloudinary(instrumentalBuffer, 'inst', env);
+                instId = instUpload.public_id;
+            }
 
             // 2. Upload Vocal (Overlay Track) to Cloudinary
             const vocalUpload = await this.uploadToCloudinary(vocalBuffer, 'vocal', env);
             const vocalId = vocalUpload.public_id.replace(/\//g, ':');
 
             // 3. Generate Transformation URL
-            // Format: https://res.cloudinary.com/<cloud_name>/video/upload/l_video:<vocal_id>,fl_layer_apply/<inst_id>.mp3
-            const mixUrl = `https://res.cloudinary.com/${cloudName}/video/upload/l_video:${vocalId},fl_layer_apply/${instId}.mp3`;
+            // We use 'so_<offset>' to align the vocal overlay
+            // Format: l_video:<vocal_id>,so_<offset>,fl_layer_apply
+            const mixUrl = `https://res.cloudinary.com/${cloudName}/video/upload/l_video:${vocalId},so_${offset.toFixed(2)},fl_layer_apply/${instId}.mp3`;
 
             console.log(`Cloudinary Mix URL: ${mixUrl}`);
 
@@ -68,6 +76,38 @@ class AudioProcessor {
         if (!response.ok) {
             const error = await response.text();
             throw new Error(`Cloudinary Upload Failed: ${error}`);
+        }
+        return await response.json();
+    }
+
+    /**
+     * Helper to upload via URL to Cloudinary
+     */
+    async uploadUrlToCloudinary(url, folder, env) {
+        const cloudName = env.ASSET_MANAGER_ID;
+        const apiKey = env.ASSET_MANAGER_KEY;
+        const apiSecret = env.ASSET_MANAGER_SECRET;
+        const timestamp = Math.round(new Date().getTime() / 1000);
+
+        const signatureStr = `folder=temp_mix/${folder}&timestamp=${timestamp}${apiSecret}`;
+        const signature = await this.sha1(signatureStr);
+
+        const formData = new FormData();
+        formData.append('file', url);
+        formData.append('folder', `temp_mix/${folder}`);
+        formData.append('timestamp', timestamp);
+        formData.append('api_key', apiKey);
+        formData.append('signature', signature);
+        formData.append('resource_type', 'video');
+
+        const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/video/upload`, {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(`Cloudinary URL Upload Failed: ${error}`);
         }
 
         return await response.json();

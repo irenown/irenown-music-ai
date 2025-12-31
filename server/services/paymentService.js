@@ -15,10 +15,11 @@ class PaymentService {
     /**
      * Creates a Stripe Checkout Session for a subscription
      */
-    async createSubscriptionSession(userId, priceId) {
+    async createSubscriptionSession(userId, priceId, env) {
         if (!this.stripe) throw new Error('Stripe is not configured');
 
-        const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+        const dbService = new DatabaseService(env.DB);
+        const user = await dbService.getUserById(userId);
 
         const session = await this.stripe.checkout.sessions.create({
             customer: user.stripe_customer_id || undefined,
@@ -40,22 +41,32 @@ class PaymentService {
     async createCreditSession(userId, amount = 1) {
         if (!this.stripe) throw new Error('Stripe is not configured');
 
-        // Logic for one-time payment to buy credits
-        // For MVP, we'll use a checkout session for simplicity
+        const pricing = {
+            1: 499,
+            3: 1299,
+            10: 3999,
+            30: 9999
+        };
+
+        const unitAmount = pricing[amount] || (amount * 499);
+
         const session = await this.stripe.checkout.sessions.create({
             payment_method_types: ['card'],
             line_items: [{
                 price_data: {
                     currency: 'usd',
-                    product_data: { name: 'iRenown Premium Song Credit' },
-                    unit_amount: 500, // $5.00 per premium song
+                    product_data: {
+                        name: `iRenown Premium Tracks (${amount} Pack)`,
+                        description: `Get ${amount} studio-grade AI music generation credits.`
+                    },
+                    unit_amount: unitAmount,
                 },
-                quantity: amount,
+                quantity: 1,
             }],
             mode: 'payment',
-            success_url: `${process.env.FRONTEND_URL}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `${process.env.FRONTEND_URL}/payment/cancel`,
-            metadata: { userId, type: 'credit_purchase', amount }
+            success_url: `${process.env.FRONTEND_URL || 'https://irenown.ai'}/console/account/billing/success?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${process.env.FRONTEND_URL || 'https://irenown.ai'}/console/account/billing/cancel`,
+            metadata: { userId, type: 'credit_purchase', amount: amount.toString() }
         });
 
         return session;
@@ -64,7 +75,8 @@ class PaymentService {
     /**
      * Handles Stripe Webhooks
      */
-    async handleWebhook(event) {
+    async handleWebhook(event, env) {
+        const dbService = new DatabaseService(env.DB);
         switch (event.type) {
             case 'checkout.session.completed':
                 const session = event.data.object;
@@ -72,15 +84,16 @@ class PaymentService {
 
                 if (session.mode === 'subscription') {
                     // Update user to premium tier
-                    db.prepare('UPDATE users SET tier = ?, subscription_id = ?, subscription_status = ?, stripe_customer_id = ? WHERE id = ?')
-                        .run('platinum', session.subscription, 'active', session.customer, userId);
+                    await env.DB.prepare('UPDATE users SET tier = ?, subscription_id = ?, subscription_status = ?, stripe_customer_id = ? WHERE id = ?')
+                        .bind('platinum', session.subscription, 'active', session.customer, userId).run();
                 } else if (session.metadata.type === 'credit_purchase') {
                     // Add premium credits
                     const credits = parseInt(session.metadata.amount);
-                    db.prepare('UPDATE users SET premium_credits = premium_credits + ? WHERE id = ?')
-                        .run(credits, userId);
+                    await env.DB.prepare('UPDATE users SET premium_credits = premium_credits + ? WHERE id = ?')
+                        .bind(credits, userId).run();
                 }
                 break;
+            // ...
 
             case 'customer.subscription.deleted':
                 const subscription = event.data.object;

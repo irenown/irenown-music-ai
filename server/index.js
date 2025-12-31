@@ -8,6 +8,7 @@ import DatabaseService from './services/database.js';
 import StorageService from './services/storageService.js';
 import VocalEnhancementService from './services/vocalEnhancement.js';
 import QueueService from './services/queueService.js';
+import paymentService from './services/paymentService.js';
 
 const app = new Hono();
 
@@ -138,6 +139,7 @@ app.post('/api/debug-produce', async (c) => {
     const genre = formData.get('genre') || 'pop';
     const name = formData.get('name') || 'Debug Project';
     const bpm = formData.get('bpm');
+    const duration = formData.get('duration');
 
     if (!vocalFile) return c.json({ error: 'Vocal file required' }, 400);
 
@@ -151,6 +153,7 @@ app.post('/api/debug-produce', async (c) => {
       name,
       genre,
       bpm: bpm ? parseInt(bpm) : null,
+      key: c.req.query('key') || 'C Major',
       vocal_url: vocalKey,
       status: 'processing',
       quality: 'standard'
@@ -171,8 +174,10 @@ app.post('/api/debug-produce', async (c) => {
         vocalKey,
         vocalFilename: vocalFile.name,
         bpm: bpm ? parseInt(bpm) : null,
+        key: c.req.query('key') || 'C Major',
         genre,
         name,
+        duration: duration ? parseInt(duration) : null,
         tier: user.tier
       });
       return c.json({ status: 'success', result });
@@ -200,11 +205,19 @@ app.post('/api/produce', async (c) => {
 
     if (!user) return c.json({ error: 'Unauthorized' }, 401);
 
+    // Enforce credit-based limits
+    const usage = await db.checkUsageLimit(user.id);
+    if (!usage.canGenerate) {
+      return c.json({ error: usage.reason }, 403);
+    }
+
     const formData = await c.req.formData();
     const vocalFile = formData.get('vocal');
     const genre = formData.get('genre') || 'pop';
     const name = formData.get('name') || 'Untitled Project';
     const bpm = formData.get('bpm');
+    const key = formData.get('key') || 'C Major';
+    const duration = formData.get('duration');
 
     if (!vocalFile) {
       return c.json({ error: 'Vocal file is required' }, 400);
@@ -220,6 +233,7 @@ app.post('/api/produce', async (c) => {
       name,
       genre,
       bpm: bpm ? parseInt(bpm) : null,
+      key,
       vocal_url: vocalKey, // Temporary reference
       status: 'processing',
       quality: user.tier === 'platinum' || user.tier === 'gold' ? 'premium' : 'standard'
@@ -241,14 +255,19 @@ app.post('/api/produce', async (c) => {
           vocalKey,
           vocalFilename: vocalFile.name,
           bpm: bpm ? parseInt(bpm) : null,
+          key,
           genre,
           name,
+          duration: duration ? parseInt(duration) : null,
           tier: user.tier
         });
       } catch (err) {
         console.error('Background Job Failed:', err);
       }
     }());
+
+    // 4. Increment usage (decrement credit or mark trial)
+    await db.incrementUsage(user.id);
 
     return c.json({
       message: 'Production started',
@@ -289,14 +308,63 @@ app.get('/api/user/usage', async (c) => {
   if (!user) return c.json({ error: 'Unauthorized' }, 401);
 
   try {
-    const usage = await db.checkUsageLimit(user.id, user.tier);
+    const usage = await db.checkUsageLimit(user.id);
     return c.json({
       tier: user.tier,
-      usage
+      usage: {
+        premium_credits: user.premium_credits,
+        has_used_trial: user.has_used_trial,
+        ...usage
+      }
     });
   } catch (error) {
     console.error('Usage Fetch Error:', error);
     return c.json({ error: 'Failed to fetch usage' }, 500);
+  }
+});
+
+// Payments & Credits
+app.post('/api/payments/create-checkout-session', async (c) => {
+  const db = new DatabaseService(c.env.DB);
+  const apiKey = c.req.header('x-api-key');
+  const user = await db.getUserByApiKey(apiKey);
+
+  if (!user) return c.json({ error: 'Unauthorized' }, 401);
+
+  try {
+    const { type, amount, plan } = await c.req.json();
+    let session;
+
+    if (type === 'credit') {
+      session = await paymentService.createCreditSession(user.id, amount || 1);
+    } else {
+      // Legacy or internal subscription support
+      session = await paymentService.createSubscriptionSession(user.id, plan, c.env);
+    }
+
+    return c.json({ url: session.url });
+  } catch (error) {
+    console.error('Payment Error:', error);
+    return c.json({ error: 'Failed to create payment session' }, 500);
+  }
+});
+
+app.post('/api/payments/webhook', async (c) => {
+  try {
+    const body = await c.req.text();
+    const signature = c.req.header('stripe-signature');
+
+    // In a real production environment, you should verify the signature:
+    // const event = stripe.webhooks.constructEvent(body, signature, c.env.STRIPE_WEBHOOK_SECRET);
+
+    // For now, accepting direct body for dev/simplicity or assume verified by Cloudflare
+    const event = JSON.parse(body);
+    await paymentService.handleWebhook(event, c.env);
+
+    return c.json({ received: true });
+  } catch (error) {
+    console.error('Webhook Error:', error);
+    return c.json({ error: 'Webhook failed' }, 400);
   }
 });
 

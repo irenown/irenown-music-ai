@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
+import { apiClient } from "@/lib/api"
 
 const plans = [
   {
@@ -20,43 +21,15 @@ const plans = [
     name: "Free",
     price: 0,
     interval: "forever",
-    features: ["2 songs/month", "Standard quality", "Watermark on output", "MP3 format", "Community support"],
-  },
-  {
-    id: "silver", // Mapped to 'creator' conceptually if needed, but keeping ID consist with DB 'silver'
-    name: "Creator",
-    price: 9.99,
-    interval: "month",
-    features: [
-      "20 songs/month",
-      "Standard quality",
-      "No watermark",
-      "MP3 format (320kbps)",
-      "Email support",
-      "Save preferences",
-    ],
-  },
-  {
-    id: "gold", // 'pro'
-    name: "Pro",
-    price: 24.99,
-    interval: "month",
-    features: [
-      "50 songs/month",
-      "Standard quality",
-      "No watermark",
-      "MP3 + WAV formats",
-      "Priority support",
-      "Advanced options",
-      "API access",
-    ],
+    features: ["1 trial song (1 minute)", "Standard quality", "Watermark on output", "MP3 format", "Community support"],
   },
 ]
 
 const premiumPacks = [
-  { name: "Single Track", price: 4.99, perSong: 4.99 },
-  { name: "3-Pack", price: 12.99, perSong: 4.33 },
-  { name: "10-Pack", price: 39.99, perSong: 4.0, popular: true },
+  { name: "1 Premium Track", price: 4.99, perSong: 4.99 },
+  { name: "3 Premium Tracks", price: 12.99, perSong: 4.33, save: "13%" },
+  { name: "10 Premium Tracks", price: 39.99, perSong: 4.0, popular: true, save: "20%" },
+  { name: "30 Premium Tracks", price: 99.99, perSong: 3.33, save: "33%" },
 ]
 
 function BillingContent() {
@@ -88,6 +61,21 @@ function BillingContent() {
     }
     fetchData()
   }, [])
+
+  const handlePurchase = async (planId: string, type: 'subscription' | 'credit' = 'credit', amount?: number) => {
+    try {
+      const { url } = await apiClient.post('/api/payments/create-checkout-session', {
+        plan: planId,
+        type,
+        amount
+      })
+
+      if (url) window.location.href = url
+    } catch (error) {
+      console.error("Purchase failed:", error)
+      alert("Failed to initiate payment. Please try again later.")
+    }
+  }
 
   const currentPlan = plans.find((p) => p.id === userTier) || plans[0]
 
@@ -128,19 +116,27 @@ function BillingContent() {
                       <Badge className="bg-green-500/20 text-green-500 border-green-500/30">Active</Badge>
                     </div>
                     <p className="text-2xl font-bold mt-1">
-                      ${currentPlan?.price}
-                      <span className="text-sm font-normal text-muted-foreground">/month</span>
+                      {currentPlan?.price === 0 ? "Free forever" : `$${currentPlan?.price}`}
                     </p>
                   </div>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3">
-                  <Button variant="outline" className="bg-transparent">
-                    Cancel Plan
-                  </Button>
-                  <Button className="bg-gradient-to-r from-irenown-dark to-irenown-mid hover:from-irenown-mid hover:to-irenown-light">
-                    <Zap className="w-4 h-4 mr-2" />
-                    Upgrade
-                  </Button>
+                  {currentPlan?.price === 0 ? (
+                    <Button className="bg-gradient-to-r from-irenown-dark to-irenown-mid hover:from-irenown-mid hover:to-irenown-light">
+                      <Zap className="w-4 h-4 mr-2" />
+                      Get Credits
+                    </Button>
+                  ) : (
+                    <>
+                      <Button variant="outline" className="bg-transparent">
+                        Cancel Plan
+                      </Button>
+                      <Button className="bg-gradient-to-r from-irenown-dark to-irenown-mid hover:from-irenown-mid hover:to-irenown-light">
+                        <Zap className="w-4 h-4 mr-2" />
+                        Upgrade
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -148,11 +144,11 @@ function BillingContent() {
               {usageData && (
                 <div className="mt-6 p-4 rounded-xl bg-muted/30">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium">Songs used this month</span>
-                    <span className="text-sm text-muted-foreground">{usageData.used} of {usageData.limit}</span>
+                    <span className="text-sm font-medium">Premium Track Credits</span>
+                    <span className="text-sm text-muted-foreground">{usageData.premium_credits || 0} tracks remaining</span>
                   </div>
-                  <Progress value={(usageData.used / usageData.limit) * 100} className="h-2" />
-                  <p className="text-xs text-muted-foreground mt-2">Renews: {new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toLocaleDateString()}</p>
+                  <Progress value={usageData.premium_credits > 0 ? 100 : 0} className="h-2" />
+                  <p className="text-xs text-muted-foreground mt-2">Trial Status: {usageData.has_used_trial ? "Used" : "Available"}</p>
                 </div>
               )}
             </CardContent>
@@ -165,7 +161,7 @@ function BillingContent() {
               <CardDescription>Choose the plan that best fits your needs</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid md:grid-cols-3 gap-4">
+              <div className="grid md:grid-cols-1 max-w-sm mx-auto gap-4">
                 {plans.map((plan) => {
                   const isCurrent = plan.id === userTier
                   return (
@@ -231,10 +227,10 @@ function BillingContent() {
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Star className="w-5 h-5 text-irenown-light" />
-                Premium Pay-Per-Song
+                Premium Track Credits
               </CardTitle>
               <CardDescription>
-                Need studio-quality for a release? Get professional mastering and stem files.
+                Pay only for what you need. One credit = One studio-grade song.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -262,20 +258,26 @@ function BillingContent() {
                     key={index}
                     className={cn(
                       "relative rounded-xl border p-4 text-center",
-                      index === 2 ? "border-irenown-mid bg-irenown-mid/5" : "border-border",
+                      pack.popular ? "border-irenown-mid bg-irenown-mid/5" : "border-border",
                     )}
                   >
-                    {index === 2 && (
+                    {pack.save && (
+                      <div className="absolute -top-3 right-4">
+                        <Badge className="bg-accent text-accent-foreground">{pack.save} Save</Badge>
+                      </div>
+                    )}
+                    {pack.popular && (
                       <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                         <Badge className="bg-irenown-mid text-primary-foreground">Best Value</Badge>
                       </div>
                     )}
                     <h4 className="font-semibold">{pack.name}</h4>
                     <p className="text-2xl font-bold mt-2">${pack.price}</p>
-                    <p className="text-xs text-muted-foreground">${pack.perSong.toFixed(2)} per song</p>
+                    <p className="text-xs text-muted-foreground">${pack.perSong.toFixed(2)} per track</p>
                     <Button
                       variant="outline"
                       size="sm"
+                      onClick={() => handlePurchase('credits', 'credit', index === 0 ? 1 : index === 1 ? 3 : index === 2 ? 10 : 30)}
                       className="mt-4 w-full bg-transparent border-irenown-mid/50 hover:bg-irenown-mid/10"
                     >
                       Buy Now

@@ -49,8 +49,8 @@ export function StudioSidebar({ projectData, setProjectData, state }: StudioSide
               disabled={isDisabled}
               onClick={() => setProjectData({ ...projectData, qualityTier: "standard" })}
               className={`p-3 rounded-lg border text-left transition-all ${projectData.qualityTier === "standard"
-                  ? "border-primary bg-primary/10"
-                  : "border-border bg-secondary/50 hover:border-primary/50"
+                ? "border-primary bg-primary/10"
+                : "border-border bg-secondary/50 hover:border-primary/50"
                 } ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
             >
               <Zap
@@ -63,8 +63,8 @@ export function StudioSidebar({ projectData, setProjectData, state }: StudioSide
               disabled={isDisabled}
               onClick={() => setProjectData({ ...projectData, qualityTier: "premium" })}
               className={`p-3 rounded-lg border text-left transition-all ${projectData.qualityTier === "premium"
-                  ? "border-accent bg-accent/10"
-                  : "border-border bg-secondary/50 hover:border-accent/50"
+                ? "border-accent bg-accent/10"
+                : "border-border bg-secondary/50 hover:border-accent/50"
                 } ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
             >
               <Sparkles
@@ -168,6 +168,26 @@ export function StudioSidebar({ projectData, setProjectData, state }: StudioSide
             onValueChange={(value) => setProjectData({ ...projectData, tempo: value[0] })}
             min={60}
             max={180}
+            step={1}
+            className="cursor-pointer"
+          />
+        </div>
+
+        {/* Duration */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-primary" />
+              <h3 className="text-sm font-semibold text-foreground">Duration</h3>
+            </div>
+            <span className="text-xs text-muted-foreground">{projectData.duration}s</span>
+          </div>
+          <Slider
+            disabled={isDisabled}
+            value={[projectData.duration]}
+            onValueChange={(value) => setProjectData({ ...projectData, duration: value[0] })}
+            min={10}
+            max={300}
             step={1}
             className="cursor-pointer"
           />

@@ -58,3 +58,39 @@ ________________________________________________________________________________
 ElevenLabs Api
 
 sk_ce1af3795680175e344b39e5d886753121c68da659376e8e
+
+________________________________________________________________________________________________________
+
+Suno Api
+
+
+// server/services/musicGeneration.js
+
+// FREE alternative - Suno unofficial API
+import { SunoAPI } from 'suno-api';
+
+const sunoClient = new SunoAPI({
+  // No API key needed - uses web scraping
+  sessionCookie: process.env.SUNO_SESSION_COOKIE // Optional
+});
+
+async function generateMusicFree(params) {
+  try {
+    const prompt = `${params.genre} instrumental, ${params.bpm} BPM, 
+                    key of ${params.key}, ${params.mood}, 
+                    no vocals, modern production`;
+    
+    // Generate with Suno (FREE)
+    const result = await sunoClient.generate({
+      prompt: prompt,
+      instrumental: true,
+      wait_audio: true
+    });
+    
+    return result.audio_url;
+    
+  } catch (error) {
+    console.error('Suno generation failed:', error);
+    return null;
+  }
+}

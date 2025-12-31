@@ -37,17 +37,23 @@ class ElevenLabsService {
      */
     async generateMusic(params, env) {
         const apiKey = env.PRODUCTION_AI_KEY_1;
-        console.log(`Generating Music with ElevenLabs: ${params.prompt}`);
+        const variations = ["cinematic", "soulful", "high-energy", "lo-fi", "lush", "gritty", "sparkling", "driving", "ethereal", "pumping", "ambient", "funky", "stadium", "intimate"];
+        const randomVar = variations[Math.floor(Math.random() * variations.length)];
+        const entropy = Math.random().toString(36).substring(7);
+        const fullPrompt = `${randomVar} ${params.prompt} [${entropy}], professional arrangement, high-fidelity`;
 
-        const response = await fetch('https://api.elevenlabs.io/v1/text-to-music', {
+        console.log(`Generating Music with ElevenLabs: ${fullPrompt}`);
+
+        const response = await fetch('https://api.elevenlabs.io/v1/music', {
             method: 'POST',
             headers: {
                 'xi-api-key': apiKey,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                text: params.prompt,
-                duration_seconds: params.duration || 30
+                prompt: fullPrompt,
+                music_length_ms: Math.floor((params.duration || 30) * 1000),
+                model_id: 'music_v1'
             })
         });
 

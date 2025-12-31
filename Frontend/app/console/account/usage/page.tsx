@@ -1,5 +1,8 @@
 "use client"
 
+import { useState, useEffect } from "react"
+import { apiClient } from "@/lib/api"
+import { useRouter } from "next/navigation"
 import { BarChart3, Music, Clock, TrendingUp, Download, Calendar, PieChart, Activity } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -27,6 +30,29 @@ const dailyActivity = [
 ]
 
 export default function UsagePage() {
+  const [usageData, setUsageData] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const router = useRouter()
+
+  useEffect(() => {
+    const fetchUsage = async () => {
+      try {
+        const res = await apiClient.get('/api/user/usage')
+        setUsageData(res.usage)
+      } catch (err) {
+        console.error("Failed to fetch usage:", err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchUsage()
+  }, [])
+
+  const handlePurchase = async (packId: string, type: 'subscription' | 'credit' = 'credit', amount?: number) => {
+    // Redirect to billing for actual purchase logic or reimplement here
+    router.push('/console/account/billing')
+  }
+
   const maxDaily = Math.max(...dailyActivity.map((d) => d.songs))
 
   return (
@@ -66,8 +92,8 @@ export default function UsagePage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-4xl font-bold text-irenown-gradient">15</p>
-                  <p className="text-muted-foreground">of 20 songs used</p>
+                  <p className="text-4xl font-bold text-irenown-gradient">{usageData?.premium_credits || 0}</p>
+                  <p className="text-muted-foreground">Premium Credits available</p>
                 </div>
                 <div className="w-24 h-24 relative">
                   <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
@@ -104,8 +130,8 @@ export default function UsagePage() {
               </div>
               <Progress value={75} className="h-3" />
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Resets in 4 days</span>
-                <span className="text-muted-foreground">January 1, 2025</span>
+                <span className="text-muted-foreground">Trial status: {usageData?.has_used_trial ? "Used" : "Available"}</span>
+                <span className="text-muted-foreground">One-time trial</span>
               </div>
             </div>
 

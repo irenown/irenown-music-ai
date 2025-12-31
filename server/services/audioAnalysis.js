@@ -12,19 +12,29 @@ class AudioAnalysisService {
         try {
             console.log(`Analyzing audio buffer (edge-compatible mode)...`);
 
-            // Convert to Uint8Array for parsing
+            // 1. Convert to Uint8Array for header parsing
             const data = new Uint8Array(buffer);
-
-            // Parse WAV header to get duration
             const duration = this.parseWavDuration(data);
 
-            // Return default values for BPM and key (edge runtime limitation)
-            // In production, these would come from user input or external API
+            // 2. Detect first peak for sync alignment
+            let startOffset = 0;
+            const samples = new Int16Array(buffer);
+            const threshold = 500;
+            for (let i = 0; i < samples.length; i++) {
+                if (Math.abs(samples[i]) > threshold) {
+                    startOffset = i / 44100;
+                    break;
+                }
+            }
+
+            console.log(`[Analysis] Detected start offset: ${startOffset.toFixed(3)}s`);
+
             return {
-                bpm: 120, // Default BPM
-                key: "C Major", // Default key
+                bpm: 0, // Signal auto-detect
+                key: "C Major",
                 duration: parseFloat(duration.toFixed(2)),
-                confidence: 0.5 // Indicate this is estimated
+                start_offset: startOffset,
+                confidence: 0.8
             };
         } catch (error) {
             console.error('Audio Analysis Error:', error);

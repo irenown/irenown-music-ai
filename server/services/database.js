@@ -57,45 +57,56 @@ class DatabaseService {
     }
 
     // Usage Tracking Logic
-    async checkUsageLimit(userId, tier) {
-        const currentMonth = new Date().toISOString().slice(0, 7); // "YYYY-MM"
+    async checkUsageLimit(userId) {
+        const user = await this.db.prepare('SELECT tier, premium_credits, has_used_trial FROM users WHERE id = ?').bind(userId).first();
 
-        const usage = await this.db.prepare(`
-            SELECT * FROM usage_tracking 
-            WHERE user_id = ? AND month = ?
-            `).bind(userId, currentMonth).first();
+        if (!user) return { canGenerate: false, reason: 'User not found' };
 
-        const limits = {
-            silver: 20,
-            gold: 50,
-            platinum: 100
-        };
+        // 1. Check persistent premium credits first
+        if (user.premium_credits > 0) {
+            return {
+                used: 0,
+                limit: user.premium_credits,
+                remaining: user.premium_credits,
+                canGenerate: true,
+                isPremium: true
+            };
+        }
 
-        const limit = limits[tier] || 0;
-        const used = usage ? usage.standard_count : 0;
+        // 2. Check one-time free trial (1 track)
+        if (!user.has_used_trial) {
+            return {
+                used: 0,
+                limit: 1,
+                remaining: 1,
+                canGenerate: true,
+                isTrial: true
+            };
+        }
 
         return {
-            used,
-            limit,
-            remaining: limit - used,
-            canGenerate: used < limit
+            used: 1,
+            limit: 1,
+            remaining: 0,
+            canGenerate: false,
+            reason: 'Credit limit reached. Please purchase more credits.'
         };
     }
 
-    async incrementUsage(userId, isPremium = false) {
-        const currentMonth = new Date().toISOString().slice(0, 7);
-        const column = isPremium ? 'premium_count' : 'standard_count';
+    async incrementUsage(userId) {
+        const user = await this.db.prepare('SELECT premium_credits, has_used_trial FROM users WHERE id = ?').bind(userId).first();
 
-        // D1 doesn't support ON CONFLICT(user_id, month) as easily if they aren't unique keys, 
-        // but the table definition in the original init() had UNIQUE(user_id, month).
-        // Let's use an UPSERT style query compatible with D1 (SQLite 3.3x+).
-        return await this.db.prepare(`
-            INSERT INTO usage_tracking(user_id, month, ${column}) 
-            VALUES(?, ?, 1)
-            ON CONFLICT(user_id, month) DO UPDATE SET 
-                ${column} = ${column} + 1,
-            updated_at = CURRENT_TIMESTAMP
-                `).bind(userId, currentMonth).run();
+        if (!user) return;
+
+        if (user.premium_credits > 0) {
+            // Deduct from persistent credits
+            return await this.db.prepare('UPDATE users SET premium_credits = premium_credits - 1 WHERE id = ?')
+                .bind(userId).run();
+        } else if (!user.has_used_trial) {
+            // Mark trial as used
+            return await this.db.prepare('UPDATE users SET has_used_trial = 1 WHERE id = ?')
+                .bind(userId).run();
+        }
     }
 
     // Auth Logic
@@ -139,8 +150,8 @@ class DatabaseService {
         try {
             // 1. Insert new user (copy) with temp unique fields
             await this.db.prepare(`
-                INSERT INTO users(id, username, email, password_hash, api_key, tier, stripe_customer_id, subscription_id, subscription_status, premium_credits, created_at)
-                VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO users(id, username, email, password_hash, api_key, tier, stripe_customer_id, subscription_id, subscription_status, premium_credits, has_used_trial, created_at)
+                VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 `).bind(
                 newId,
                 `${user.username}${tempSuffix}`,
@@ -148,7 +159,7 @@ class DatabaseService {
                 user.password_hash,
                 `${user.api_key}${tempSuffix}`,
                 user.tier,
-                user.stripe_customer_id, user.subscription_id, user.subscription_status, user.premium_credits, user.created_at
+                user.stripe_customer_id, user.subscription_id, user.subscription_status, user.premium_credits, user.has_used_trial || 0, user.created_at
             ).run();
 
             // 2. Update child tables
