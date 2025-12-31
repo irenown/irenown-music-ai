@@ -10,24 +10,8 @@ import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-const genreStats = [
-  { genre: "Pop", count: 18, percentage: 38 },
-  { genre: "Rock", count: 8, percentage: 17 },
-  { genre: "Hip-Hop", count: 7, percentage: 15 },
-  { genre: "EDM", count: 6, percentage: 13 },
-  { genre: "R&B", count: 5, percentage: 11 },
-  { genre: "Other", count: 3, percentage: 6 },
-]
-
-const dailyActivity = [
-  { day: "Mon", songs: 2 },
-  { day: "Tue", songs: 1 },
-  { day: "Wed", songs: 3 },
-  { day: "Thu", songs: 0 },
-  { day: "Fri", songs: 4 },
-  { day: "Sat", songs: 2 },
-  { day: "Sun", songs: 3 },
-]
+const genreStats = []
+const dailyActivity = []
 
 export default function UsagePage() {
   const [usageData, setUsageData] = useState<any>(null)
@@ -53,7 +37,12 @@ export default function UsagePage() {
     router.push('/console/account/billing')
   }
 
-  const maxDaily = Math.max(...dailyActivity.map((d) => d.songs))
+  const stats = usageData?.stats
+  const dynamicGenreStats = stats?.genreStats || []
+  const dynamicWeeklyActivity = stats?.weeklyActivity || []
+  const maxWeekly = Math.max(...(dynamicWeeklyActivity.map((d: any) => d.songs) || [1]))
+
+  const maxDaily = 1 // deprecated in UI shift
 
   return (
     <div className="space-y-6 pb-20 lg:pb-0 max-w-5xl">
@@ -114,7 +103,7 @@ export default function UsagePage() {
                       stroke="url(#gradient)"
                       strokeWidth="8"
                       strokeLinecap="round"
-                      strokeDasharray={`${75 * 2.51} ${100 * 2.51}`}
+                      strokeDasharray={`${(usageData?.has_used_trial ? 100 : 0) * 2.51} ${100 * 2.51}`}
                     />
                     <defs>
                       <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -124,37 +113,36 @@ export default function UsagePage() {
                     </defs>
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-lg font-bold">75%</span>
+                    <span className="text-lg font-bold">{usageData?.has_used_trial ? "1/1" : "0/1"}</span>
                   </div>
                 </div>
               </div>
-              <Progress value={75} className="h-3" />
+              <Progress value={usageData?.has_used_trial ? 100 : 0} className="h-3" />
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Trial status: {usageData?.has_used_trial ? "Used" : "Available"}</span>
                 <span className="text-muted-foreground">One-time trial</span>
               </div>
             </div>
 
-            {/* Quick Stats */}
             <div className="grid grid-cols-2 gap-4">
               <div className="p-4 rounded-xl bg-muted/30">
                 <Music className="w-5 h-5 text-irenown-light mb-2" />
-                <p className="text-2xl font-bold">15</p>
+                <p className="text-2xl font-bold">{stats?.totalSongs || 0}</p>
                 <p className="text-sm text-muted-foreground">Standard Songs</p>
               </div>
               <div className="p-4 rounded-xl bg-muted/30">
                 <Activity className="w-5 h-5 text-irenown-light mb-2" />
-                <p className="text-2xl font-bold">2</p>
+                <p className="text-2xl font-bold">{stats?.premiumSongs || 0}</p>
                 <p className="text-sm text-muted-foreground">Premium Songs</p>
               </div>
               <div className="p-4 rounded-xl bg-muted/30">
                 <Clock className="w-5 h-5 text-irenown-light mb-2" />
-                <p className="text-2xl font-bold">1h 15m</p>
+                <p className="text-2xl font-bold">{stats?.totalProcessingTime || "0h 0m"}</p>
                 <p className="text-sm text-muted-foreground">Processing Time</p>
               </div>
               <div className="p-4 rounded-xl bg-muted/30">
                 <TrendingUp className="w-5 h-5 text-irenown-light mb-2" />
-                <p className="text-2xl font-bold">4m 30s</p>
+                <p className="text-2xl font-bold">{stats?.avgPerSong || "4m 30s"}</p>
                 <p className="text-sm text-muted-foreground">Avg. per Song</p>
               </div>
             </div>
@@ -172,7 +160,9 @@ export default function UsagePage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {genreStats.map((stat) => (
+            {dynamicGenreStats.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">No generation data yet</p>
+            ) : dynamicGenreStats.map((stat: any) => (
               <div key={stat.genre} className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <span className="font-medium">{stat.genre}</span>
@@ -201,12 +191,12 @@ export default function UsagePage() {
           </CardHeader>
           <CardContent>
             <div className="flex items-end justify-between h-48 gap-2">
-              {dailyActivity.map((day) => (
+              {dynamicWeeklyActivity.map((day: any) => (
                 <div key={day.day} className="flex-1 flex flex-col items-center gap-2">
                   <div className="w-full flex flex-col items-center justify-end h-36">
                     <div
                       className="w-full max-w-8 bg-gradient-to-t from-irenown-dark to-irenown-light rounded-t-lg transition-all duration-500"
-                      style={{ height: day.songs > 0 ? `${(day.songs / maxDaily) * 100}%` : "4px" }}
+                      style={{ height: day.songs > 0 ? `${(day.songs / maxWeekly) * 100}%` : "4px" }}
                     />
                   </div>
                   <span className="text-xs text-muted-foreground">{day.day}</span>
@@ -228,22 +218,22 @@ export default function UsagePage() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="p-6 rounded-xl bg-gradient-to-br from-irenown-dark/20 to-irenown-light/10 border border-irenown-mid/20">
               <Music className="w-6 h-6 text-irenown-light mb-3" />
-              <p className="text-3xl font-bold">47</p>
+              <p className="text-3xl font-bold">{stats?.totalSongs || 0}</p>
               <p className="text-sm text-muted-foreground">Total Songs Created</p>
             </div>
             <div className="p-6 rounded-xl bg-gradient-to-br from-irenown-dark/20 to-irenown-light/10 border border-irenown-mid/20">
               <Activity className="w-6 h-6 text-irenown-light mb-3" />
-              <p className="text-3xl font-bold">5</p>
+              <p className="text-3xl font-bold">{stats?.premiumSongs || 0}</p>
               <p className="text-sm text-muted-foreground">Premium Songs</p>
             </div>
             <div className="p-6 rounded-xl bg-gradient-to-br from-irenown-dark/20 to-irenown-light/10 border border-irenown-mid/20">
               <Calendar className="w-6 h-6 text-irenown-light mb-3" />
-              <p className="text-3xl font-bold">348</p>
+              <p className="text-3xl font-bold">{stats?.daysAsMember || 0}</p>
               <p className="text-sm text-muted-foreground">Days as Member</p>
             </div>
             <div className="p-6 rounded-xl bg-gradient-to-br from-irenown-dark/20 to-irenown-light/10 border border-irenown-mid/20">
               <Clock className="w-6 h-6 text-irenown-light mb-3" />
-              <p className="text-3xl font-bold">3h 52m</p>
+              <p className="text-3xl font-bold">{stats?.totalProcessingTime || "0h 0m"}</p>
               <p className="text-sm text-muted-foreground">Total Processing Time</p>
             </div>
           </div>
@@ -254,16 +244,16 @@ export default function UsagePage() {
               <p className="text-sm text-muted-foreground">Based on your generation history</p>
             </div>
             <Badge className="bg-irenown-mid/20 text-irenown-light border-irenown-mid/30 text-lg px-4 py-1">
-              Pop (38%)
+              {stats?.favoriteGenre || "N/A"} ({stats?.favoritePercentage || 0}%)
             </Badge>
           </div>
 
           <div className="mt-6 p-4 rounded-xl bg-muted/30">
             <div className="flex items-center justify-between mb-3">
               <p className="font-medium">Storage Used</p>
-              <span className="text-sm text-muted-foreground">450 MB of 5 GB</span>
+              <span className="text-sm text-muted-foreground">{stats?.storageUsedMB || 0} MB of 5 GB</span>
             </div>
-            <Progress value={9} className="h-2" />
+            <Progress value={Math.min(100, (stats?.storageUsedMB || 0) / 50)} className="h-2" />
           </div>
         </CardContent>
       </Card>

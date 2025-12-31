@@ -308,14 +308,19 @@ app.get('/api/user/usage', async (c) => {
   if (!user) return c.json({ error: 'Unauthorized' }, 401);
 
   try {
-    const usage = await db.checkUsageLimit(user.id);
+    const [usage, stats] = await Promise.all([
+      db.checkUsageLimit(user.id),
+      db.getUserStats(user.id)
+    ]);
+
     return c.json({
       tier: user.tier,
       usage: {
         premium_credits: user.premium_credits,
         has_used_trial: user.has_used_trial,
         ...usage
-      }
+      },
+      stats
     });
   } catch (error) {
     console.error('Usage Fetch Error:', error);

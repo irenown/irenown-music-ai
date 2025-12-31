@@ -109,6 +109,65 @@ class DatabaseService {
         }
     }
 
+    async getUserStats(userId) {
+        const user = await this.getUserById(userId);
+        if (!user) return null;
+
+        // 1. Basic counts
+        const totalSongs = await this.db.prepare('SELECT COUNT(*) as count FROM projects WHERE user_id = ?').bind(userId).first();
+        const premiumSongs = await this.db.prepare("SELECT COUNT(*) as count FROM projects WHERE user_id = ? AND quality = 'premium'").bind(userId).first();
+
+        // 2. Genre stats
+        const { results: genreResults } = await this.db.prepare(`
+            SELECT genre, COUNT(*) as count 
+            FROM projects 
+            WHERE user_id = ? 
+            GROUP BY genre 
+            ORDER BY count DESC
+        `).bind(userId).all();
+
+        const totalCount = totalSongs.count || 0;
+        const genreStats = genreResults.map(r => ({
+            genre: r.genre,
+            count: r.count,
+            percentage: totalCount > 0 ? Math.round((r.count / totalCount) * 100) : 0
+        }));
+
+        // 3. Weekly Activity (last 7 days)
+        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const weeklyActivity = [];
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const dateStr = d.toISOString().slice(0, 10);
+            const dayName = days[d.getDay()];
+
+            const count = await this.db.prepare(`
+                SELECT COUNT(*) as count 
+                FROM projects 
+                WHERE user_id = ? AND date(created_at) = date(?)
+            `).bind(userId, dateStr).first();
+
+            weeklyActivity.push({ day: dayName, songs: count.count || 0 });
+        }
+
+        // 4. All-time details
+        const daysAsMember = Math.floor((Date.now() - new Date(user.created_at).getTime()) / (1000 * 60 * 60 * 24)) || 1;
+
+        return {
+            totalSongs: totalCount,
+            premiumSongs: premiumSongs.count || 0,
+            genreStats,
+            weeklyActivity,
+            daysAsMember,
+            favoriteGenre: genreStats[0]?.genre || 'None',
+            favoritePercentage: genreStats[0]?.percentage || 0,
+            storageUsedMB: Math.round(totalCount * 5.2), // Mock: 5.2MB avg per song
+            totalProcessingTime: `${Math.floor(totalCount * 4.5 / 60)}h ${Math.round(totalCount * 4.5 % 60)}m`, // Mock: 4.5m avg
+            avgPerSong: "4m 30s"
+        };
+    }
+
     // Auth Logic
     async getUserByApiKey(apiKey) {
         return await this.db.prepare('SELECT * FROM users WHERE api_key = ?').bind(apiKey).first();
