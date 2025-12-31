@@ -248,6 +248,22 @@ class DatabaseService {
         const result = await this.db.prepare('SELECT 1 FROM users WHERE username = ?').bind(username).first();
         return !!result;
     }
+
+    // Settings Logic
+    async getSettings(userId) {
+        const result = await this.db.prepare('SELECT settings FROM user_settings WHERE user_id = ?').bind(userId).first();
+        return result ? JSON.parse(result.settings) : null;
+    }
+
+    async upsertSettings(userId, settings) {
+        return await this.db.prepare(`
+            INSERT INTO user_settings (user_id, settings, updated_at)
+            VALUES (?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(user_id) DO UPDATE SET
+                settings = excluded.settings,
+                updated_at = CURRENT_TIMESTAMP
+        `).bind(userId, JSON.stringify(settings)).run();
+    }
 }
 
 export default DatabaseService;

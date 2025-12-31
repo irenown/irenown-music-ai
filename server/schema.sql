@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS users (
     subscription_id TEXT,
     subscription_status TEXT,
     premium_credits INTEGER DEFAULT 0,
+    has_used_trial INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -37,4 +38,11 @@ CREATE TABLE IF NOT EXISTS usage_tracking (
     premium_count INTEGER DEFAULT 0,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(user_id, month)
+);
+
+CREATE TABLE IF NOT EXISTS user_settings (
+    user_id TEXT PRIMARY KEY,
+    settings JSON,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
 );

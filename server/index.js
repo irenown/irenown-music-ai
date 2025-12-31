@@ -328,6 +328,42 @@ app.get('/api/user/usage', async (c) => {
   }
 });
 
+// Settings Endpoints
+app.get('/api/user/settings', async (c) => {
+  const db = new DatabaseService(c.env.DB);
+  const apiKey = c.req.header('x-api-key');
+  const user = await db.getUserByApiKey(apiKey);
+
+  if (!user) return c.json({ error: 'Unauthorized' }, 401);
+
+  try {
+    const settings = await db.getSettings(user.id);
+    return c.json({ settings });
+  } catch (error) {
+    console.error('Settings Fetch Error:', error);
+    return c.json({ error: 'Failed to fetch settings' }, 500);
+  }
+});
+
+app.post('/api/user/settings', async (c) => {
+  const db = new DatabaseService(c.env.DB);
+  const apiKey = c.req.header('x-api-key');
+  const user = await db.getUserByApiKey(apiKey);
+
+  if (!user) return c.json({ error: 'Unauthorized' }, 401);
+
+  try {
+    const { settings } = await c.req.json();
+    if (!settings) return c.json({ error: 'Missing settings' }, 400);
+
+    await db.upsertSettings(user.id, settings);
+    return c.json({ success: true });
+  } catch (error) {
+    console.error('Settings Save Error:', error);
+    return c.json({ error: 'Failed to save settings' }, 500);
+  }
+});
+
 // Payments & Credits
 app.post('/api/payments/create-checkout-session', async (c) => {
   const db = new DatabaseService(c.env.DB);
