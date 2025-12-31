@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useSettings } from "@/components/settings-provider"
 import { apiClient } from "@/lib/api"
 import { useRouter } from "next/navigation"
 import { BarChart3, Music, Clock, TrendingUp, Download, Calendar, PieChart, Activity } from "lucide-react"
@@ -14,6 +15,7 @@ const genreStats = []
 const dailyActivity = []
 
 export default function UsagePage() {
+  const { formatMonth } = useSettings()
   const [usageData, setUsageData] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
@@ -52,14 +54,12 @@ export default function UsagePage() {
           <p className="text-muted-foreground mt-1">Track your song generation and platform usage</p>
         </div>
         <div className="flex items-center gap-3">
-          <Select defaultValue="december">
+          <Select defaultValue="current">
             <SelectTrigger className="w-40 bg-muted/50">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="december">December 2024</SelectItem>
-              <SelectItem value="november">November 2024</SelectItem>
-              <SelectItem value="october">October 2024</SelectItem>
+              <SelectItem value="current">{formatMonth(new Date())}</SelectItem>
             </SelectContent>
           </Select>
           <Button variant="outline" className="bg-transparent">
@@ -73,7 +73,7 @@ export default function UsagePage() {
       <Card className="bg-card/50 backdrop-blur-sm border-border/50">
         <CardHeader>
           <CardTitle className="text-lg">Usage This Month</CardTitle>
-          <CardDescription>December 2024</CardDescription>
+          <CardDescription>{formatMonth(new Date())}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid lg:grid-cols-2 gap-8">

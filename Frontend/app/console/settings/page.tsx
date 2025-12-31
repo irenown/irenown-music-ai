@@ -1,7 +1,9 @@
 "use client"
 
 import { useState, useEffect, Suspense } from "react"
+import { useTheme } from "next-themes"
 import { apiClient } from "@/lib/api"
+import { useSettings } from "@/components/settings-provider"
 import Link from "next/link"
 import {
   Bell,
@@ -27,6 +29,9 @@ import { Separator } from "@/components/ui/separator"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 function SettingsContent() {
+  const { settings, isLoading: isGlobalLoading, updateSettings } = useSettings()
+  const { setTheme } = useTheme()
+
   const [notifications, setNotifications] = useState({
     songComplete: true,
     usageReminder: true,
@@ -63,34 +68,22 @@ function SettingsContent() {
   })
 
   const [hasChanges, setHasChanges] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
 
+  // Sync internal state with global settings once loaded
   useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const res = await apiClient.get('/api/user/settings')
-        if (res.settings) {
-          if (res.settings.notifications) setNotifications(res.settings.notifications)
-          if (res.settings.preferences) setPreferences(res.settings.preferences)
-          if (res.settings.audio) setAudio(res.settings.audio)
-          if (res.settings.privacy) setPrivacy(res.settings.privacy)
-        }
-      } catch (err) {
-        console.error("Failed to fetch settings:", err)
-      } finally {
-        setIsLoading(false)
-      }
+    if (settings) {
+      if (settings.notifications) setNotifications(settings.notifications)
+      if (settings.preferences) setPreferences(settings.preferences)
+      if (settings.audio) setAudio(settings.audio)
+      if (settings.privacy) setPrivacy(settings.privacy)
     }
-    fetchSettings()
-  }, [])
+  }, [settings])
 
   const handleSave = async () => {
     setIsSaving(true)
     try {
-      await apiClient.post('/api/user/settings', {
-        settings: { notifications, preferences, audio, privacy }
-      })
+      await updateSettings({ notifications, preferences, audio, privacy })
       setHasChanges(false)
     } catch (err) {
       console.error("Failed to save settings:", err)
@@ -101,8 +94,13 @@ function SettingsContent() {
   }
 
   const handleReset = () => {
-    // Ideally fetch again or keep original state
-    window.location.reload()
+    if (settings) {
+      if (settings.notifications) setNotifications(settings.notifications)
+      if (settings.preferences) setPreferences(settings.preferences)
+      if (settings.audio) setAudio(settings.audio)
+      if (settings.privacy) setPrivacy(settings.privacy)
+      setHasChanges(false)
+    }
   }
 
   const handleNotificationChange = (key: string, value: boolean) => {
@@ -113,6 +111,11 @@ function SettingsContent() {
   const handlePreferenceChange = (key: string, value: string | boolean) => {
     setPreferences((prev) => ({ ...prev, [key]: value }))
     setHasChanges(true)
+
+    // Immediate preview for theme
+    if (key === 'theme' && typeof value === 'string') {
+      setTheme(value)
+    }
   }
 
   const handleAudioChange = (key: string, value: boolean | string | number[]) => {
@@ -150,13 +153,13 @@ function SettingsContent() {
         )}
       </div>
 
-      {isLoading && (
+      {isGlobalLoading && (
         <div className="flex items-center justify-center py-20">
           <RotateCcw className="w-8 h-8 animate-spin text-irenown-light" />
         </div>
       )}
 
-      <div className={isLoading ? "hidden" : "block space-y-6"}>
+      <div className={isGlobalLoading ? "hidden" : "block space-y-6"}>
 
         {/* Notifications */}
         <Card className="bg-card/50 backdrop-blur-sm border-border/50">

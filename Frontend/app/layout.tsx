@@ -3,6 +3,8 @@ import type { Metadata } from "next"
 import { Inter, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { AppWrapper } from "@/components/app-wrapper"
+import { ThemeProvider } from "@/components/theme-provider"
+import { SettingsProvider } from "@/components/settings-provider"
 import "./globals.css"
 
 const _inter = Inter({ subsets: ["latin"] })
@@ -29,9 +31,13 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" suppressHydrationWarning>
       <body className={`font-sans antialiased`}>
-        <AppWrapper>{children}</AppWrapper>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
+          <SettingsProvider>
+            <AppWrapper>{children}</AppWrapper>
+          </SettingsProvider>
+        </ThemeProvider>
         <Analytics />
       </body>
     </html>
