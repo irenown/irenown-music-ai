@@ -7,36 +7,42 @@ import Link from "next/link"
 
 const sections = [
   {
+    slug: "getting-started",
     icon: Zap,
     title: "Getting Started",
     description: "Learn the basics and create your first track",
     links: ["Quick Start Guide", "Platform Overview", "Account Setup"],
   },
   {
+    slug: "uploading-vocals",
     icon: Upload,
     title: "Uploading Vocals",
     description: "Best practices for vocal recording and upload",
     links: ["Supported Formats", "Recording Tips", "Audio Requirements"],
   },
   {
+    slug: "ai-generation",
     icon: Music,
     title: "AI Generation",
     description: "Understanding instrumental and mixing options",
     links: ["Genre Selection", "Style Prompts", "Quality Tiers"],
   },
   {
+    slug: "mixing-mastering",
     icon: Sliders,
     title: "Mixing & Mastering",
     description: "Fine-tune your final track",
     links: ["Vocal Effects", "Mix Controls", "Mastering Options"],
   },
   {
+    slug: "exporting",
     icon: Download,
     title: "Exporting",
     description: "Download and share your finished music",
     links: ["File Formats", "Stem Downloads", "Sharing Options"],
   },
   {
+    slug: "api-reference",
     icon: Code,
     title: "API Reference",
     description: "Integrate iRenown into your workflow",
@@ -71,26 +77,25 @@ export default function DocsPage() {
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {sections.map((section, i) => (
               <AnimatedSection key={section.title} delay={i * 100}>
-                <div className="group h-full rounded-2xl border border-border bg-card/50 p-6 transition-all hover:border-primary/50 hover:glow-silver">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 mb-4 transition-colors group-hover:bg-primary/20">
-                    <section.icon className="h-6 w-6 text-primary" />
+                <Link href={`/docs/${section.slug}`}>
+                  <div className="group h-full rounded-2xl border border-border bg-card/50 p-6 transition-all hover:border-primary/50 hover:glow-silver cursor-pointer">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 mb-4 transition-colors group-hover:bg-primary/20">
+                      <section.icon className="h-6 w-6 text-primary" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-foreground mb-2">{section.title}</h3>
+                    <p className="text-sm text-muted-foreground mb-4">{section.description}</p>
+                    <ul className="space-y-2">
+                      {section.links.map((link) => (
+                        <li key={link}>
+                          <span className="text-sm text-muted-foreground group-hover:text-primary transition-colors flex items-center gap-1">
+                            <ArrowRight className="h-3 w-3" />
+                            {link}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-2">{section.title}</h3>
-                  <p className="text-sm text-muted-foreground mb-4">{section.description}</p>
-                  <ul className="space-y-2">
-                    {section.links.map((link) => (
-                      <li key={link}>
-                        <Link
-                          href="#"
-                          className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"
-                        >
-                          <ArrowRight className="h-3 w-3" />
-                          {link}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                </Link>
               </AnimatedSection>
             ))}
           </div>
