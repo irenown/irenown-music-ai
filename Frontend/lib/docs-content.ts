@@ -1,62 +1,56 @@
-export const docContent: Record<string, { title: string; description: string; content: string[] }> = {
+export const docContent: Record<string, { title: string; description: string; sections: { id: string; subtitle: string; text: string }[] }> = {
     "getting-started": {
         title: "Getting Started",
         description: "Learn the basics and create your first track",
-        content: [
-            "Welcome to iRenown! Our platform allows you to transform simple vocal recordings into professional-grade music tracks using advanced AI.",
-            "**Step 1: Account Setup** - Create your account and explore the dashboard. Every new user gets 1 trial track (up to 1 minute) to test the quality.",
-            "**Step 2: The Studio** - Head over to the Studio to start your first project. You'll need a vocal recording to begin.",
-            "**Step 3: Pick a Genre** - Choose from our curated genres like Pop, Rock, EDM, or Jazz to define the sound of your track."
+        sections: [
+            { id: "quick-start", subtitle: "Quick Start Guide", text: "Welcome to iRenown! To get started immediately, head to the Studio, upload a clear vocal sample, select 'Pop' genre, and hit Produce. Our AI will handle the rest." },
+            { id: "platform-overview", subtitle: "Platform Overview", text: "iRenown is a professional AI music production suite. We combine vocal enhancement with generative instrumentation to create studio-quality music in minutes." },
+            { id: "account-setup", subtitle: "Account Setup", text: "Create your profile to save projects and manage credits. Every new user receives 1 free trial generation to explore our premium output quality." }
         ]
     },
     "uploading-vocals": {
         title: "Uploading Vocals",
         description: "Best practices for vocal recording and upload",
-        content: [
-            "The quality of your AI generation depends heavily on the quality of your input vocal.",
-            "**Supported Formats**: We support MP3 and WAV files. For the best results, use high-bitrate WAV files.",
-            "**Recording Tips**: Record in a quiet room with minimal reverb. Ensure your vocals are clear and not peaking (distorting).",
-            "**Audio Requirements**: Files should be under 50MB. Aim for a dry vocal track without heavy existing effects for the most creative AI processing."
+        sections: [
+            { id: "supported-formats", subtitle: "Supported Formats", text: "We support high-quality WAV and MP3 files. For professional results, we recommend 44.1kHz / 24-bit WAV files." },
+            { id: "recording-tips", subtitle: "Recording Tips", text: "Record in a quiet environment. Use a pop filter and keep a consistent distance from the microphone to ensure your AI generation has the best possible input." },
+            { id: "audio-requirements", subtitle: "Audio Requirements", text: "Files should be under 50MB and up to 10 minutes long. Ensure the vocal is 'dry' (no reverb or delay) for the most flexible AI processing." }
         ]
     },
     "ai-generation": {
         title: "AI Generation",
         description: "Understanding instrumental and mixing options",
-        content: [
-            "iRenown's AI generates a full instrumental backing that harmonizes perfectly with your vocals.",
-            "**Genre Selection**: Each genre has a unique sonic signature. Pop is polished and catchy, while Rock features authentic guitar tones.",
-            "**Style Prompts**: You can provide additional context to guide the AI, such as 'upbeat', 'melancholic', or 'high energy'.",
-            "**Quality Tiers**: Standard generation is fast and efficient. Premium generation uses our most advanced models for maximum musicality and depth."
+        sections: [
+            { id: "genre-selection", subtitle: "Genre Selection", text: "Choose from Pop, Rock, EDM, Jazz, or Hip-Hop. Each genre features unique instruments and professional arrangement logic tailored to your vocals." },
+            { id: "style-prompts", subtitle: "Style Prompts", text: "Guide the mood of your track by adding prompts like 'energetic', 'soulful', 'dark', or 'cinematic' to specialize the AI's creative direction." },
+            { id: "quality-tiers", subtitle: "Quality Tiers", text: "Premium tracks use our high-fidelity generation engine with multi-layered instrumentation and advanced stereo imaging for a commercial-grade sound." }
         ]
     },
     "mixing-mastering": {
         title: "Mixing & Mastering",
         description: "Fine-tune your final track",
-        content: [
-            "Once the instrumental is generated, our engine performs a professional mix and master.",
-            "**Vocal Effects**: We apply intelligent EQ, compression, and optional auto-tune to make your vocals sit perfectly in the mix.",
-            "**Mix Controls**: Our engine balances the levels between your vocals and the AI-generated instruments automatically.",
-            "**Mastering Options**: Every track is mastered with commercial-grade loudness normalization (Loudnorm) to ensure it's radio-ready."
+        sections: [
+            { id: "vocal-effects", subtitle: "Vocal Effects", text: "Our engine automatically applies professional compression, EQ, and optional transparent pitch correction to ensure your vocals sound polished." },
+            { id: "mix-controls", subtitle: "Mix Controls", text: "The AI balances vocal clarity against the generated instrumental, ensuring no frequencies clash and the production remains transparent and powerful." },
+            { id: "mastering-options", subtitle: "Mastering Options", text: "Every track is finalized with Loudnorm normalization, matching industry loudness standards while preserving the dynamic range of your performance." }
         ]
     },
     "exporting": {
         title: "Exporting",
         description: "Download and share your finished music",
-        content: [
-            "Your music is ready for the world. Here's how to take it further.",
-            "**File Formats**: Download your final mix as a high-quality 320kbps MP3 or a lossless WAV file.",
-            "**Stem Downloads**: Premium users can download 'stems' (separate tracks for vocals and instruments) for further mixing in any DAW like Ableton or Logic.",
-            "**Sharing**: Use our built-in sharing tools to send your creation directly to social media or your collaborators."
+        sections: [
+            { id: "file-formats", subtitle: "File Formats", text: "Export your mastered track in 320kbps MP3 for quick sharing or 24-bit Lossless WAV for professional use and distribution." },
+            { id: "stem-downloads", subtitle: "Stem Downloads", text: "Premium users can download separate stems for vocals, drums, bass, and melodic elements, providing full control for secondary mixing in any DAW." },
+            { id: "sharing-options", subtitle: "Sharing Options", text: "Directly share your tracks to social media or generate a private listening link for collaborators to review your production." }
         ]
     },
     "api-reference": {
         title: "API Reference",
         description: "Integrate iRenown into your workflow",
-        content: [
-            "Developers can leverage the iRenown engine through our secure REST API.",
-            "**Authentication**: All requests require a valid API Key passed in the 'x-api-key' header.",
-            "**Endpoints**: The `/api/produce` endpoint handles vocal processing and music generation.",
-            "**Webhooks**: Set up webhooks to receive instant notifications when your project processing is complete."
+        sections: [
+            { id: "authentication", subtitle: "Authentication", text: "Secure your requests using your private API Key. Pass the 'x-api-key' header with every request to our production endpoints." },
+            { id: "endpoints", subtitle: "Endpoints", text: "Access our core production via the /api/produce POST endpoint. You can monitor project status and fetch results programmatically." },
+            { id: "webhooks", subtitle: "Webhooks", text: "Register a webhook URL to receive automated POST notifications the moment your AI generation and mastering process is complete." }
         ]
     }
 }

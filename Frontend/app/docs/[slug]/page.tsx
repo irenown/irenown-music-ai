@@ -7,8 +7,9 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { docContent } from "@/lib/docs-content"
 
-export default function DocDetailPage({ params }: { params: { slug: string } }) {
-    const doc = docContent[params.slug]
+export default async function DocDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+    const { slug } = await params
+    const doc = docContent[slug]
 
     if (!doc) {
         notFound()
@@ -34,16 +35,19 @@ export default function DocDetailPage({ params }: { params: { slug: string } }) 
                     </AnimatedSection>
 
                     <div className="space-y-12">
-                        {doc.content.map((paragraph, i) => (
-                            <AnimatedSection key={i} delay={i * 100}>
-                                <div className="flex gap-4 p-6 rounded-2xl border border-border bg-card/50">
-                                    <div className="mt-1 flex-shrink-0">
-                                        <CheckCircle2 className="h-6 w-6 text-primary" />
-                                    </div>
-                                    <div className="text-lg text-foreground leading-relaxed">
-                                        {paragraph.split("**").map((part, index) =>
-                                            index % 2 === 1 ? <strong key={index} className="text-primary">{part}</strong> : part
-                                        )}
+                        {doc.sections.map((section, i) => (
+                            <AnimatedSection key={section.id} delay={i * 100}>
+                                <div id={section.id} className="scroll-mt-32">
+                                    <div className="flex gap-4 p-6 rounded-2xl border border-border bg-card/50 transition-all hover:border-primary/30 group">
+                                        <div className="mt-1 flex-shrink-0">
+                                            <CheckCircle2 className="h-6 w-6 text-primary" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-xl font-bold text-foreground mb-4 group-hover:text-primary transition-colors">{section.subtitle}</h3>
+                                            <p className="text-lg text-muted-foreground leading-relaxed">
+                                                {section.text}
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
                             </AnimatedSection>
